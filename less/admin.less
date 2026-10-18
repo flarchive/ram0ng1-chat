@@ -1,0 +1,227 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ramon/chat: admin styles
+//
+// The settings page follows the Avocado theme's arrangement (a sticky bar of
+// tabs with a search box, titled cards per tab) with the chat's own look: the
+// active tab and every card badge are speech bubbles, tail at the lower left.
+// Core still draws each field, the save bar's buttons and the permission grid;
+// the layout lives in admin/Layout.less, the live previews in
+// admin/Preview.less.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@import "admin/Layout.less";
+@import "admin/Preview.less";
+
+// ── Permission grid headings ─────────────────────────────────────────────────
+// Each chat block's heading carries a second line saying when the block is in
+// force, so "global" and "channels run by members" never have to be guessed.
+.ChatPermissionHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &-title {
+    font-weight: 700;
+  }
+
+  &-help {
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.35;
+    color: var(--muted-color);
+    white-space: normal;
+    max-width: 420px;
+  }
+}
+
+.PermissionGrid-section th .ChatPermissionHeading {
+  padding: 4px 0;
+}
+
+// ── Incoming webhooks ────────────────────────────────────────────────────────
+.ChatWebhooks {
+  &-create {
+    display: flex;
+
+    // Explicit, and not redundant: the element also carries core's `.Form-group`,
+    // which is `display: flex; flex-direction: column`. Setting only `display`
+    // here left that column direction in force, so the row stacked, and
+    // `flex: 1 1 200px` below, written to size widths, sized heights instead and
+    // turned each field into a 200px-tall box.
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    // Core's .Form-group also sets `align-items: flex-start`, which without this
+    // leaves the row hugging its content instead of filling the panel.
+    width: 100%;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .FormControl {
+      width: auto;
+      flex: 1 1 200px;
+    }
+
+    .Button {
+      flex-shrink: 0;
+    }
+  }
+
+  &-empty {
+    margin: 0;
+  }
+
+  &-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  &-row {
+    padding: 12px 14px;
+    border: 1px solid var(--control-bg);
+    border-radius: 8px;
+
+    &-main {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    &-meta {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    // Shown once, right after the key is minted. Monospace because it is meant
+    // to be copied verbatim into another system.
+    &-url {
+      margin-top: 8px;
+
+      .FormControl {
+        font-family: monospace;
+        font-size: 12px;
+      }
+    }
+
+    &-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+
+      .ChatWebhooks-author {
+        width: auto;
+        min-width: 160px;
+      }
+    }
+  }
+}
+
+// ── Announcer settings ───────────────────────────────────────────────────────
+// Who the chat posts as. See BotSettings.tsx: the two halves are exclusive, so
+// only one of them is ever on screen.
+.ChatBotSettings {
+  &-intro {
+    margin-bottom: 12px;
+  }
+
+  &-avatarRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  // Shown at the size it will actually be drawn at in the stream, so an admin
+  // picking a busy image can see it will not read at that scale.
+  &-preview {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--control-bg);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &-previewEmpty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    background: var(--primary-color);
+  }
+
+  &-avatarActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    // The upload control is a <label> wrapping a hidden file input, so it needs
+    // the pointer a real button would have.
+    label.Button {
+      margin: 0;
+      cursor: pointer;
+    }
+  }
+
+  &-selected {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 4px;
+    background: var(--control-bg);
+
+    .Avatar {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  &-selectedName {
+    flex: 1;
+  }
+
+  &-picker {
+    margin-top: 16px;
+  }
+
+  &-candidates {
+    margin-top: 8px;
+    border: 1px solid var(--control-bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  &-candidate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--control-bg);
+    }
+
+    .Avatar {
+      width: 26px;
+      height: 26px;
+    }
+  }
+}

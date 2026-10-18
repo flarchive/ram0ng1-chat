@@ -1,0 +1,29 @@
+# Dependencies. `js/dist` is deliberately NOT ignored: Flarum extensions ship their
+# compiled bundles so that `composer require` works without a Node toolchain.
+/vendor
+js/node_modules
+
+# Resolved for the dev environment only. This is a library, so consumers resolve
+# their own versions against the forum they install it into.
+composer.lock
+
+# End-to-end harness output. The tokens file holds live API keys for the local
+# forum and must never be committed; results and screenshots are per run.
+/tests/E2E/.tokens.json
+/tests/E2E/results
+/tests/E2E/screenshots
+
+# Test and analysis caches
+.phpunit.cache
+.phpunit.result.cache
+# Psalm's cache, and the SARIF report the CI job writes into the working tree.
+/.psalm-cache
+psalm-taint.sarif
+/tests/integration/tmp
+
+# Editors and OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+CLAUDE.md
