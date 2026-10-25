@@ -1,0 +1,106 @@
+{
+    "name": "ramon/chat",
+    "description": "Discourse-style realtime chat for Flarum v2 — category-scoped public channels, threads, direct and group messages, reactions, mentions, uploads and search, natively integrated with discussions, notifications and search.",
+    "keywords": [
+        "flarum",
+        "chat",
+        "channels",
+        "threads",
+        "realtime",
+        "discourse"
+    ],
+    "type": "flarum-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ramon Guilherme",
+            "email": "ramon@ramonguilherme.com.br",
+            "homepage": "https://ramonguilherme.com.br",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/ram0ng1/chat/issues",
+        "source": "https://github.com/ram0ng1/chat"
+    },
+    "require": {
+        "php": "^8.3",
+        "flarum/core": "^2.0.0"
+    },
+    "require-dev": {
+        "flarum/mentions": "^2.0.0",
+        "fof/upload": "^2.0",
+        "flarum/tags": "^2.0.0",
+        "flarum/testing": "^2.0.1",
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^12.5.22",
+        "pusher/pusher-php-server": "^7.2",
+        "vimeo/psalm": "^6.0",
+        "flarum/gdpr": "^2.0.0"
+    },
+    "suggest": {
+        "flarum/tags": "Required for category-scoped channels, which inherit tag permissions (^2.0).",
+        "flarum/realtime": "Required for live message delivery, typing indicators and presence (^2.0).",
+        "flarum/mentions": "Enables @user and @group autocomplete parity with discussions (^2.0).",
+        "flarum/emoji": "Enables :shortcode: rendering in messages (^2.0).",
+        "pianotell/flarum-ext-flamoji": "Adds its emoji picker to the chat composer, and renders custom emoji in messages, suggestions and reactions (^2.5).",
+        "fof/upload": "Stores public chat attachments on fof/upload's configured storage (S3, Qiniu, a CDN-fronted directory) instead of the forum's own disk (^2.0)."
+    },
+    "autoload": {
+        "psr-4": {
+            "Ramon\\Chat\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ramon\\Chat\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Chat",
+            "category": "feature",
+            "optional-dependencies": [
+                "flarum/tags",
+                "flarum/realtime",
+                "flarum/mentions",
+                "flarum/emoji",
+                "pianotell/flarum-ext-flamoji",
+                "flarum/gdpr",
+                "flarum/audit",
+                "fof/upload"
+            ],
+            "icon": {
+                "image": "icon.svg",
+                "backgroundColor": "#fff",
+                "backgroundSize": "58%",
+                "backgroundPosition": "center",
+                "backgroundRepeat": "no-repeat"
+            }
+        },
+        "flarum-cli": {
+            "modules": {
+                "admin": true,
+                "forum": true,
+                "js": true,
+                "jsCommon": true,
+                "css": true,
+                "gitConf": true,
+                "prettier": true,
+                "typescript": true,
+                "backendTesting": true,
+                "editorConfig": true
+            }
+        }
+    },
+    "scripts": {
+        "analyse": "phpstan analyse",
+        "taint": "psalm --taint-analysis",
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "@ramon/chat",
+  "dependencies": {
+    "flarum-tsconfig": "^2.0.0",
+    "flarum-webpack-config": "^3.0.6",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^7.2.3"
+  },
+  "scripts": {
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production",
+    "analyze": "cross-env ANALYZER=true yarn run build",
+    "format": "prettier --write src",
+    "format-check": "prettier --check src",
+    "clean-typings": "node -e \"require('fs').rmSync('dist-typings',{recursive:true,force:true})\"",
+    "build-typings": "npm run clean-typings && tsc -p .",
+    "check-typings": "tsc --noEmit --emitDeclarationOnly false -p ."
+  },
+  "devDependencies": {
+    "emojibase-data": "^17.0.0",
+    "simple-emoji-map": "^1.0.0"
+  }
+}
