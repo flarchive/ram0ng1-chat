@@ -2,26 +2,15 @@
 
 > **Read-only archive of released versions of ramon/chat.** Not for installation: use [Packagist](https://packagist.org/packages/ramon/chat) or the [upstream repository](https://github.com/ram0ng1/chat).
 
-**35** versions archived · Latest: [`v0.3.3`](https://github.com/flarchive/ramon-chat/tree/archive/v0.3.3) · License: `MIT` · Flarum: `^2.0.0`
+**0** versions archived · Latest: [`v0.3.4`](https://github.com/flarchive/ram0ng1-chat/tree/archive/v0.3.4) · License: `MIT` · Flarum: `^2.0.0`
 
 ## Archived Versions
 
 | Version | Released | Flarum | Source |
 |---|---|---|---|
-| `v0.0.1` | 2026-07-30 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.1) |
-| `v0.0.2` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.2) |
-| `v0.0.3` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.3) |
-| `v0.0.4` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.4) |
-| `v0.0.5` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.5) |
-| `v0.0.6` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.6) |
-| `v0.0.7` | 2026-07-31 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.7) |
-| `v0.0.8` | 2026-08-01 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.8) |
-| `v0.0.9` | 2026-08-02 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.0.9) |
-| `v0.1.0` | 2026-08-02 | `^2.0.0` | [Browse](https://github.com/flarchive/ramon-chat/tree/archive/v0.1.0) |
+| — | — | — | — |
 
-[View all 35 versions](https://github.com/flarchive/ramon-chat/tags)
-
-Catalog entry: [packages/ramon-chat.json](https://github.com/flarchive/archive-index/blob/main/packages/ramon-chat.json)
+Catalog entry: [packages/ram0ng1-chat.json](https://github.com/flarchive/archive-index/blob/main/packages/ram0ng1-chat.json)
 
 ## About this archive
 
