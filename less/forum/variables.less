@@ -1,0 +1,139 @@
+// Tokens próprios do chat
+//
+// Só valores em que o Avocado não opina; o que ele já define é consumido, não
+// redefinido (ver fallbacks.less).
+
+// ── Layout ──
+@chat-sidebar-width:        280px;
+@chat-thread-panel-width:   380px;
+@chat-drawer-width:         420px;
+@chat-drawer-height:        560px;
+@chat-drawer-collapsed:     48px;
+@chat-header-height:        56px;
+// Uma linha de texto mais o padding; os controles ficam numa linha própria abaixo.
+@chat-composer-min-height:  34px;
+@chat-composer-max-height:  220px;
+
+// Abaixo disto o drawer ocupa a tela toda e a thread empilha sobre o canal.
+@chat-mobile-breakpoint:    767px;
+
+// ── Ritmo das mensagens ──
+@chat-avatar-size:          32px;
+@chat-avatar-size-compact:  24px;
+@chat-message-gutter:       44px;  // avatar + gap, para alinhar mensagens agrupadas
+@chat-message-gap:          2px;   // entre mensagens agrupadas do mesmo autor
+@chat-message-group-gap:    12px;  // entre autores
+
+// ── Espaçamento ──
+// Uma escala em vez de um número por regra, para tudo se separar pelas mesmas
+// medidas. Poucos passos de propósito.
+@chat-space-xs:             4px;   // dentro de um controle: ícone e label
+@chat-space-sm:             8px;   // entre irmãos que andam juntos
+@chat-space-md:             14px;  // entre label e campo
+@chat-space-lg:             20px;  // entre campos de um formulário
+@chat-space-xl:             28px;  // entre seções
+
+// Não é espaçamento: a largura renderizada do checkbox, usada para alinhar o help
+// com o label.
+@chat-checkbox-size:        16px;
+
+// Também não: a largura do selo do ramon/verified numa linha de mensagem. O box
+// do selo e a seta do popover precisam concordar com ela.
+@chat-verified-badge-size:  13px;
+
+// Distância da seta do popover até a borda esquerda do painel. A seta é um
+// quadrado de 10px girado 45° (~7.1px para cada lado) e o canto tem raio 8px;
+// abaixo de 15.1px ela encosta na curva. 16px é o primeiro pixel inteiro livre.
+@chat-verified-arrow-inset: 16px;
+
+// ── Geometria do diálogo de canal ──
+// O formulário rola dentro do diálogo, e o limite de rolagem só acerta se bater
+// com o espaço ocupado fora dele. Os três mudam juntos.
+@chat-modal-margin:         40px;                          // acima e abaixo do diálogo
+@chat-modal-reserved:       (@chat-modal-margin * 2);      // o que as margens ocupam
+@chat-modal-bands:          150px;                         // header + footer, que não rolam
+
+// Recuo que o `.Checkbox--switch` do core reserva para o switch (`--left-pad: 65px`
+// no core). O help sob o switch usa o mesmo recuo para alinhar com o label.
+@chat-switch-indent:        58px;
+
+// Botões redondos do composer. Um valor só: anexar e enviar ficam lado a lado, e
+// tamanhos diferentes desalinham os centros.
+@chat-composer-button:      32px;
+
+// ── Raios ──
+// Mais justos que os 14px do Avocado: as linhas do chat são densas.
+@chat-radius-sm:            8px;
+@chat-radius-md:            12px;
+@chat-radius-pill:          999px;
+
+// ── Tipografia ──
+@chat-font-message:         15px;
+@chat-font-meta:            12px;
+@chat-font-label:           13px;
+
+// ── Tempos ──
+// Quanto tempo a linha fica destacada depois do salto. `jumpToMessage` remove a
+// classe no mesmo tempo; mantenha os dois iguais.
+@chat-jump-highlight:       3s;
+
+// ── Cores semânticas do chat ──
+:root {
+  // Divisor de não lidas. Independente de --alert-error-color para um tema que
+  // reestilize alertas não mexer nele.
+  --chat-unread-line:        #e03e3e;
+
+  // Destaque de menção ao leitor.
+  --chat-mention-bg:         rgba(255, 196, 0, 0.14);
+  --chat-mention-border:     rgba(255, 196, 0, 0.55);
+
+  // Mensagem fixada. Diferente do âmbar da menção: os dois podem valer na mesma
+  // linha e significam coisas distintas.
+  --chat-pinned-bg:          rgba(99, 102, 241, 0.10);
+  --chat-pinned-border:      rgba(99, 102, 241, 0.75);
+
+  // Mensagem com denúncias abertas, vista por moderador. Só uma barra e um label:
+  // a linha continua sendo uma mensagem para ler.
+  --chat-flagged-border:     #d83e3e;
+
+  // Hover de controle destrutivo em texto: um tom, não um preenchimento. É o
+  // `@error-color` do core com alpha baixo, para combinar com o label em `--error-color`.
+  --chat-danger-tint:        rgba(216, 62, 62, 0.10);
+
+  // Estados da linha.
+  --chat-row-hover-bg:       rgba(0, 0, 0, 0.035);
+  --chat-row-selected-bg:    rgba(59, 130, 246, 0.10);
+
+
+  // Chips de reação.
+  --chat-reaction-bg:        var(--avocado-surface-1);
+  --chat-reaction-bg-active: rgba(59, 130, 246, 0.14);
+  --chat-reaction-border:    var(--avocado-border-chip);
+
+  // Tombstone de mensagem apagada.
+  --chat-tombstone-color:    var(--avocado-muted-icon);
+
+  // Faixa de thread sob a mensagem.
+  --chat-thread-strip:       var(--avocado-border-subtle);
+
+  // Translúcido em vez de cinza fixo, para o thumb se tingir com a superfície
+  // (stream, modal e dropdown de emoji têm fundos diferentes).
+  --chat-scrollbar-thumb:       rgba(0, 0, 0, 0.18);
+  --chat-scrollbar-thumb-hover: rgba(0, 0, 0, 0.34);
+}
+
+[data-theme^="dark"] {
+  --chat-unread-line:        #ff6b6b;
+  --chat-danger-tint:        rgba(255, 107, 107, 0.18);
+  --chat-mention-bg:         rgba(255, 196, 0, 0.10);
+  --chat-row-hover-bg:       rgba(255, 255, 255, 0.04);
+  --chat-row-selected-bg:    rgba(96, 165, 250, 0.14);
+  --chat-reaction-bg-active: rgba(96, 165, 250, 0.18);
+  --chat-pinned-bg:          rgba(129, 140, 248, 0.12);
+  --chat-pinned-border:      rgba(129, 140, 248, 0.85);
+  --chat-flagged-border:     #ff6b6b;
+
+  // Claro no escuro, com alpha menor: o mesmo alpha vira uma faixa forte no escuro.
+  --chat-scrollbar-thumb:       rgba(255, 255, 255, 0.16);
+  --chat-scrollbar-thumb-hover: rgba(255, 255, 255, 0.30);
+}

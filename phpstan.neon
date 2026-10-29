@@ -1,0 +1,25 @@
+includes:
+    - vendor/flarum/phpstan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - extend.php
+        - src
+        - migrations
+    databaseMigrationsPath: ['migrations']
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # A relação `tags` da discussão vem do flarum/tags (opcional), registrada
+        # pelo Extend\Model dele: o PHPStan não enxerga relações dinâmicas de
+        # extensões que não estão nos `paths`.
+        -
+            identifier: method.notFound
+            message: '#^Call to an undefined method Flarum\\Discussion\\Discussion::tags\(\)\.$#'
+            path: src/Service/ChannelArchiver.php
+        -
+            identifier: catch.neverThrown
+            path: src/Listener/AnnounceDiscussions.php
+        -
+            identifier: catch.neverThrown
+            path: src/Listener/JoinChannelsOnReply.php

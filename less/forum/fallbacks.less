@@ -1,0 +1,57 @@
+// Fallbacks dos tokens do Avocado
+//
+// Em outro tema as custom properties do Avocado não existem e as regras que as
+// leem ficariam inválidas. Aqui elas são declaradas a partir de variáveis do core;
+// o `:root` do próprio Avocado carrega depois e vence pela cascata. Por isso os
+// componentes podem usar --avocado-* sem condição.
+
+:root {
+  // Superfícies
+  --avocado-surface-1:         var(--control-bg);
+  --avocado-surface-2:         var(--control-bg);
+
+  // Bordas. O core não tem token de borda; derivam da cor do texto com alpha
+  // baixo, o que funciona no claro e no escuro.
+  --avocado-border-subtle:     rgba(0, 0, 0, 0.10);
+  --avocado-border-soft:       rgba(0, 0, 0, 0.07);
+  --avocado-border-chip:       rgba(0, 0, 0, 0.12);
+
+  // Texto e ícones apagados
+  --avocado-muted-icon:        var(--muted-color);
+  --avocado-muted-placeholder: var(--muted-color);
+  --avocado-muted-label:       var(--muted-color);
+  --avocado-text-dark:         var(--text-color);
+
+  // Presença
+  --avocado-online:            #22c55e;
+  --avocado-online-ring:       var(--body-bg);
+
+  // Movimento
+  --avocado-t-fast:            0.15s ease;
+  --avocado-t-normal:          0.16s ease;
+  --avocado-t-medium:          0.2s ease;
+
+  // Escala de z-index
+  --avocado-z-sidebar:         10;
+  --avocado-z-topbar:          60;
+  --avocado-z-dropdown:        400;
+  --avocado-z-modal-backdrop:  500;
+  --avocado-z-tooltip:         9999;
+
+  // Elevação
+  --shadow-subtle:             0 1px 6px rgba(0, 0, 0, 0.06);
+  --shadow-medium:             0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lifted:             0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+// Modo escuro: os alphas acima somem em fundo escuro, então bordas e sombras
+// têm valores próprios.
+[data-theme^="dark"] {
+  --avocado-border-subtle:     rgba(255, 255, 255, 0.08);
+  --avocado-border-soft:       rgba(255, 255, 255, 0.07);
+  --avocado-border-chip:       rgba(255, 255, 255, 0.10);
+
+  --shadow-subtle:             0 1px 6px rgba(0, 0, 0, 0.30);
+  --shadow-medium:             0 8px 24px rgba(0, 0, 0, 0.40);
+  --shadow-lifted:             0 12px 32px rgba(0, 0, 0, 0.50);
+}

@@ -1,0 +1,4147 @@
+// Componentes do chat
+//
+// A ordem segue a árvore de js/src/forum/components.
+
+// ── Botão do header ──
+// O contador usa `.Bubble.HeaderDropdownBubble` e é estilizado só pelo core,
+// inclusive o offset do `@phone`; sobrescrever uma das bordas de um box que o core
+// ancora pela outra estica o badge.
+.ChatNavButton {
+  // O bubble é `position: absolute`; o `.Dropdown` do core dá o containing block ao
+  // sino, e este botão precisa dar o seu.
+  position: relative;
+
+  // O mesmo tratamento do toggle de HeaderDropdown do core, para casar com o sino e
+  // a bandeira. Só no breakpoint do core: no celular o header vira lista com labels.
+  // E só com ícone: o mixin esconde `.Button-label` e sobraria um círculo vazio.
+  &.hasIcon {
+    @media @tablet-up {
+      .Button--icon();
+    }
+  }
+
+  // O gap do core entre ícone e label (`.HeaderDropdown .Dropdown-toggle`); só
+  // aparece no drawer, onde o label é exibido.
+  .Button-label {
+    margin-left: 7px;
+  }
+}
+
+// ── Drawer ──
+// Painel flutuante no canto inferior direito, sobre qualquer página.
+.ChatDrawer {
+  position: fixed;
+  right: 16px;
+  bottom: 0;
+  // Logo acima do composer do fórum (1020) e do bubble de resposta do tema, e
+  // abaixo de dropdowns, modais, alertas e tooltips (1030+). O composer só vem para a
+  // frente enquanto está em uso (utils/stacking.ts).
+  z-index: ~"calc(var(--zindex-composer, 1020) + 5)";
+
+  display: flex;
+  flex-direction: column;
+  width: @chat-drawer-width;
+  height: @chat-drawer-height;
+  max-height: ~"calc(100vh - 80px)";
+
+  background: var(--body-bg);
+  border: 1px solid var(--avocado-border-subtle);
+  border-bottom: 0;
+  border-radius: @chat-radius-md @chat-radius-md 0 0;
+  box-shadow: var(--shadow-lifted);
+
+  transition: height var(--avocado-t-medium);
+
+  &--collapsed {
+    height: @chat-drawer-collapsed;
+    overflow: hidden;
+  }
+
+  // Entre abrir e o chunk da UI chegar.
+  &--loading {
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-header {
+    .chat-flex-row(8px);
+    flex-shrink: 0;
+    height: @chat-drawer-collapsed;
+    padding: 0 8px 0 14px;
+    border-bottom: 1px solid var(--avocado-border-soft);
+    cursor: pointer;
+  }
+
+  &-title {
+    .chat-truncate();
+    flex: 1;
+    min-width: 0;
+    font-size: @chat-font-label;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  // Com canal aberto o título é um botão que abre os detalhes, como no header da
+  // tela cheia; perde o chrome de botão do navegador. Hover igual ao de
+  // `.ChatChannel-title`, mesmo gesto no mesmo objeto. Fica nos 13px do drawer: a
+  // barra tem 48px e cinco controles ao lado.
+  &-title--channel {
+    .chat-flex-row(8px);
+    padding: 4px 8px;
+    margin-left: -8px;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+  }
+
+  &-titleText {
+    .chat-truncate();
+    min-width: 0;
+  }
+
+  // Tamanho do sidebar, não do header da tela cheia: aqui a marca identifica, não
+  // encabeça.
+  &-icon {
+    .chat-flex-center();
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--avocado-muted-icon);
+  }
+
+  &-actions {
+    .chat-flex-row(2px);
+    flex-shrink: 0;
+  }
+
+  // Ações do canal antes dos controles da janela e separadas deles: um grupo age
+  // na conversa, o outro no painel.
+  &-channelMenu {
+    display: flex;
+    margin-right: 4px;
+    padding-right: 4px;
+    border-right: 1px solid var(--avocado-border-soft);
+
+    // Alinhado à direita: o toggle fica a quatro controles da borda de um painel de
+    // 320px, e o alinhamento padrão do Flarum faria o menu vazar.
+    .Dropdown-menu {
+      right: 0;
+      left: auto;
+    }
+  }
+
+  &-body {
+    display: flex;
+    flex: 1;
+    min-height: 0; // lets the message list scroll instead of the drawer growing
+  }
+
+  // Sem regras mobile: abaixo de `@chat-mobile-breakpoint` este painel não é
+  // renderizado (`ChatDrawer.view()` devolve `.ChatFab`).
+}
+
+// ── Botão flutuante ──
+// O drawer aberto no celular: um bubble sobre a página. Tocar abre o chat em tela
+// cheia.
+.ChatFab {
+  position: fixed;
+  right: 16px;
+
+  // Livre do composer, que o core fixa embaixo, e da faixa do home indicator.
+  bottom: ~"calc(16px + env(safe-area-inset-bottom, 0px))";
+
+  z-index: var(--avocado-z-dropdown);
+
+  &-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--body-bg);
+    font-size: 22px;
+    box-shadow: var(--shadow-lifted);
+    cursor: pointer;
+    transition: transform var(--avocado-t-fast);
+
+    &:active {
+      transform: scale(0.94);
+    }
+  }
+
+  // Não lidas no próprio bubble, a única coisa na tela que pode mostrá-las com a
+  // conversa fechada.
+  &-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--control-bg);
+    color: var(--control-color);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  &-badge--mention {
+    background: var(--alert-error-bg, #d83e3e);
+    color: #fff;
+  }
+
+  // Pequeno de propósito: dispensar é a ação mais rara, e outro controle do mesmo
+  // tamanho pareceria uma escolha entre iguais.
+  &-dismiss {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 24px;
+    height: 24px;
+    min-width: 0;
+    padding: 0 !important;
+    border-radius: 50%;
+    background: var(--body-bg) !important;
+    color: var(--muted-color) !important;
+    box-shadow: var(--shadow-lifted);
+    font-size: 11px;
+    line-height: 24px;
+  }
+}
+
+// ── Toolbar do celular ──
+// O core só estiliza `.App-titleControl` e `.App-primaryControl` dentro de
+// `@media @phone`. Acima disso eles sobrariam como itens flex soltos no
+// `.ChatPage`; escondidos por media query porque um teste de largura em JS não
+// sobrevive a um resize sem redraw.
+.ChatToolbarTitle,
+.ChatToolbarBack {
+  @media @tablet-up {
+    display: none;
+  }
+}
+
+// ── Página em tela cheia ──
+// A classe vai no `<body>` a partir da `ChatPage`; as regras e o motivo estão em
+// `.chat-suppress-page-chrome()`. O drawer não participa: no celular ele é o botão
+// flutuante.
+body.ChatFullPage {
+  .chat-suppress-page-chrome();
+}
+
+.ChatPage {
+  display: flex;
+  height: ~"calc(100vh - var(--header-height, 60px))";
+  overflow: hidden;
+
+  &-main {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+
+    // Containing block da thread, que abaixo do breakpoint mobile vira
+    // `position: absolute; inset: 0` sobre o canal.
+    position: relative;
+  }
+
+  @media (max-width: @chat-mobile-breakpoint) {
+    // `--header-height-phone`, não `--header-height`: nesta largura o core usa o
+    // valor de celular no padding do `.App`.
+    //
+    // `dvh` depois de `vh` como override progressivo: no celular `100vh` é a viewport
+    // com a barra de URL recolhida, e o composer ficaria sob ela. Navegador sem `dvh`
+    // descarta a declaração e fica com o `vh`.
+    height: ~"calc(100vh - var(--header-height-phone, 46px))";
+    height: ~"calc(100dvh - var(--header-height-phone, 46px))";
+
+    // No celular sidebar e canal são telas separadas; o router decide qual monta.
+    // `.ChatSidebar`, não `&-sidebar`: o componente leva a própria classe.
+    .ChatSidebar,
+    &-main {
+      flex: 1 1 100%;
+      width: auto;
+      min-width: 0;
+    }
+  }
+}
+
+// Como fica uma subárvore quebrada. Discreto de propósito: deve dizer "esta parte
+// está indisponível" sem tirar a atenção do que ainda funciona.
+.ChatErrorBoundary {
+  .chat-flex-row(@chat-space-sm);
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: @chat-space-xl @chat-space-lg;
+  font-size: @chat-font-label;
+  color: var(--avocado-muted-label);
+  text-align: center;
+
+  i {
+    color: var(--alert-error-bg, #d83e3e);
+  }
+}
+
+// ── Foco por teclado ──
+// Muitos controles do chat são `<button>` puros (links rápidos, linhas de canal,
+// chips de reação, stickers…) que o core não estiliza. Uma regra só, para o próximo
+// controle já nascer com foco visível. `:focus-visible` para o clique do mouse não
+// deixar anel.
+.ChatPage,
+.ChatDrawer,
+.ChatFab,
+.ChatModal,
+.ChatLightbox,
+.ChatStickerPicker,
+.EmojiPicker {
+  // Só botões e links: campos já mostram foco pelo cursor e pelo `FormControl` do
+  // core, e no composer o anel contornaria tudo.
+  button:focus-visible,
+  a:focus-visible,
+  [tabindex]:focus-visible {
+    // Outline não entra no layout, então nada se mexe quando o foco chega.
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+// ── Sidebar ──
+.ChatSidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: @chat-sidebar-width;
+  border-right: 1px solid var(--avocado-border-soft);
+  background: var(--body-bg);
+
+  &-top {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--avocado-border-soft);
+  }
+
+  // Links "Minhas threads" e "Busca" acima da lista. Navegação, não conteúdo: mais
+  // discretos que os canais, em peso médio e apagados até hover ou ativo.
+  &-quickLink {
+    .chat-flex-row(10px);
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: @chat-radius-sm;
+    font-size: @chat-font-label;
+    font-weight: 600;
+    color: var(--avocado-muted-label);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: background var(--avocado-t-fast), color var(--avocado-t-fast);
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+      color: var(--avocado-text-dark);
+    }
+
+    // Indica em que tela o usuário está.
+    &--active {
+      // Cor forte do texto, não a de destaque: `--primary-color` sobre o fundo
+      // selecionado ficava mais apagado que os inativos no tema escuro. Combina com as
+      // linhas de canal abaixo.
+      color: var(--avocado-text-dark);
+      background: var(--chat-row-selected-bg);
+      font-weight: 800;
+    }
+
+    &-icon {
+      // Coluna fixa para os labels alinharem, seja qual for a largura do glifo.
+      flex-shrink: 0;
+      width: 18px;
+      font-size: 14px;
+      text-align: center;
+      color: inherit;
+      opacity: 0.75;
+    }
+
+    &--active &-icon {
+      opacity: 1;
+    }
+
+    // Denúncias abertas; o único contador de um link rápido.
+    &-badge {
+      margin-left: auto;
+      flex-shrink: 0;
+      min-width: 20px;
+      padding: 1px @chat-space-xs;
+      border-radius: @chat-radius-pill;
+      background: var(--alert-error-bg, #d83e3e);
+      color: var(--alert-error-color, #fff);
+      font-size: @chat-font-meta;
+      font-weight: 800;
+      line-height: 1.5;
+      text-align: center;
+    }
+  }
+
+  &-scroll {
+    .chat-scroll-y();
+    flex: 1;
+    min-height: 0;
+    padding: 8px;
+  }
+
+  &-sectionHeader {
+    .chat-flex-row(6px);
+    padding: 10px 10px 6px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--avocado-muted-label);
+
+    // Só o primeiro vai para a direita; o gap do mixin de linha separa os demais.
+    &-action:first-of-type {
+      margin-left: auto;
+    }
+
+    &-action {
+      color: var(--avocado-muted-icon);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+
+      &:hover {
+        color: var(--avocado-text-dark);
+        background: var(--chat-row-hover-bg);
+      }
+    }
+  }
+
+  // ── Celular ──
+  // No celular o sidebar ocupa a página inteira, e os labels de 13px e linhas de 6px
+  // ficam pequenos demais; os alvos precisam de 44px. Só afeta a página em tela cheia:
+  // o drawer não existe abaixo deste breakpoint.
+  @media (max-width: @chat-mobile-breakpoint) {
+    // Nada fica à direita nesta largura; o divisor seria uma linha na borda da tela.
+    border-right: 0;
+
+    &-top {
+      gap: @chat-space-xs;
+      padding: @chat-space-sm;
+    }
+
+    &-quickLink {
+      min-height: 48px;
+      padding: 10px 12px;
+      font-size: @chat-font-message;
+      border-radius: @chat-radius-md;
+
+      &-icon {
+        width: 24px;
+        font-size: 17px;
+      }
+
+      &-badge {
+        min-width: 24px;
+        font-size: @chat-font-label;
+      }
+    }
+
+    &-scroll {
+      padding: @chat-space-sm;
+    }
+
+    &-sectionHeader {
+      padding: @chat-space-md 12px @chat-space-sm;
+      font-size: @chat-font-meta;
+
+      &-action {
+        // Glifo de 12px com 2px de padding dá alvo de 16px, pequeno demais para as
+        // únicas ações do sidebar.
+        .chat-flex-center();
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: @chat-font-message;
+        border-radius: @chat-radius-sm;
+      }
+    }
+  }
+}
+
+// Linha de canal no sidebar.
+.ChatChannelRow {
+  .chat-flex-row(8px);
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: @chat-radius-sm;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--avocado-text-dark);
+  transition: background var(--avocado-t-fast);
+
+  &:hover {
+    background: var(--chat-row-hover-bg);
+  }
+
+  &--active {
+    background: var(--chat-row-selected-bg);
+    font-weight: 800;
+  }
+
+  // Canais silenciados continuam listados, mas recuam.
+  &--muted {
+    opacity: 0.55;
+  }
+
+  &-icon {
+    .chat-flex-center();
+    width: 20px;
+    flex-shrink: 0;
+    color: var(--avocado-muted-icon);
+    font-size: 14px;
+  }
+
+  &-name {
+    .chat-truncate();
+    flex: 1;
+    font-size: @chat-font-label;
+  }
+
+  &-badge {
+    flex-shrink: 0;
+    min-width: 18px;
+    padding: 1px 5px;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+    color: var(--avocado-muted-label);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+
+    // Badge de menção é o único caso que ganha cor no sidebar.
+    &--mention {
+      background: var(--chat-unread-line);
+      color: #fff;
+    }
+  }
+
+  // A pilha de avatares de conversa direta é estilizada pelo slot em que fica
+  // (`.ChatChannelIcon--avatars`), que serve header, card do Browse e modal de info.
+  &--online .ChatChannelIcon--avatars .Avatar:first-child {
+    .chat-online-ring(2px);
+  }
+
+  // Como no bloco de celular do `.ChatSidebar`: em tela cheia estas linhas são a
+  // navegação principal. 48px é a altura que o core usa para itens tocáveis no drawer.
+  @media (max-width: @chat-mobile-breakpoint) {
+    min-height: 48px;
+    padding: @chat-space-sm 12px;
+    gap: 12px;
+    border-radius: @chat-radius-md;
+
+    &-icon {
+      width: 26px;
+      font-size: 17px;
+    }
+
+    &-name {
+      font-size: @chat-font-message;
+    }
+
+    &-badge {
+      min-width: 24px;
+      padding: 2px 7px;
+      font-size: @chat-font-label;
+    }
+
+    // `& &-lock` em vez de `&-lock`: o tamanho das marcas vem de uma regra
+    // compartilhada com o Browse, mais adiante no arquivo, que venceria o empate.
+    // Aninhar aumenta a especificidade sem mover a regra.
+    & &-lock,
+    & &-mute {
+      font-size: @chat-font-label;
+    }
+
+    // Sobrescreve o default em em de `.ChatChannelIcon--avatars`, que encolheria os
+    // rostos justo quando a linha cresce.
+    .ChatChannelIcon--avatars .Avatar {
+      width: @chat-avatar-size;
+      height: @chat-avatar-size;
+
+      & + .Avatar {
+        margin-left: -12px;
+      }
+    }
+  }
+}
+
+// ── Canal ──
+.ChatChannel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  &-header {
+    .chat-flex-row(10px);
+    flex-shrink: 0;
+    height: @chat-header-height;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--avocado-border-soft);
+    background: var(--body-bg);
+  }
+
+  // O título é um botão que abre o painel de info. Ícone ao lado de duas linhas
+  // (nome e descrição) para cada uma ter sua largura; o nome só é cortado quando o
+  // header não comporta nem ele.
+  &-title {
+    .chat-flex-row(8px);
+    flex: 1;
+    min-width: 0;
+
+    // Não `.chat-truncate()`: `white-space: nowrap` no botão impediria as duas linhas.
+    // Os filhos truncam a si mesmos.
+    overflow: hidden;
+
+    padding: 4px 8px;
+    margin-left: -8px;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+    text-align: left;
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+  }
+
+  // Emoji, imagem ou hash, num elemento próprio: um emoji é text node, então
+  // seletores como `> span:first-child` pegariam o nome.
+  &-icon {
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  &-titleText {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+
+    // Os dois são necessários: sem `min-width: 0` o item flex não encolhe abaixo do
+    // conteúdo e a reticência nunca aparece.
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-name {
+    .chat-truncate();
+    max-width: 100%;
+    line-height: 1.25;
+  }
+
+  // Secundária: mais discreta e visível também no celular, já que em linha própria
+  // não tira largura do nome.
+  &-description {
+    .chat-truncate();
+    max-width: 100%;
+    font-size: @chat-font-meta;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--avocado-muted-label);
+  }
+
+  &-headerActions {
+    .chat-flex-row(2px);
+    flex-shrink: 0;
+  }
+
+  // Faixa fina sob o header com a mensagem fixada, também no drawer, que não tem
+  // espaço para o painel. A faixa é só o container: com mais de uma fixada ela tem
+  // dois botões, e botão dentro de botão é inválido.
+  &-pinnedBar {
+    .chat-flex-row(0);
+    flex-shrink: 0;
+    width: 100%;
+    border-bottom: 1px solid var(--avocado-border-soft);
+    background: var(--chat-pinned-bg);
+
+    // O padding fica no botão de pular, para o hover cobrir a faixa toda.
+    &-jump {
+      .chat-flex-row(10px);
+      flex: 1;
+      min-width: 0;
+      padding: 7px 14px;
+      border: 0;
+      background: none;
+      text-align: left;
+      cursor: pointer;
+
+      &:disabled {
+        // Visível mas inerte: a mensagem está fixada, mas fora da janela carregada.
+        cursor: default;
+      }
+
+      // O token de hover dos outros controles. Um `filter` não serve: a faixa é
+      // dividida em duas metades e o filter só age no que o próprio elemento pinta.
+      &:hover:not(:disabled) {
+        background: var(--chat-row-hover-bg);
+      }
+    }
+
+    &-icon {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--chat-pinned-border);
+    }
+
+    &-text {
+      .chat-truncate();
+      flex: 1;
+      font-size: @chat-font-label;
+      color: var(--avocado-muted-label);
+    }
+
+    // Entrada para a lista completa: contagem e chevron, já que o ícone da faixa já
+    // diz "fixada".
+    &-all {
+      .chat-flex-row(4px);
+      flex-shrink: 0;
+      align-self: stretch;
+      padding: 0 12px 0 8px;
+      border: 0;
+      border-left: 1px solid var(--avocado-border-soft);
+      background: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--avocado-muted-label);
+
+      // Igual ao da metade de pular, para a faixa reagir como uma superfície só.
+      &:hover {
+        background: var(--chat-row-hover-bg);
+        color: var(--avocado-text-dark);
+      }
+
+      // Com o painel aberto. Cor, não fundo, como em `.ChatChannel-headerAction--active`:
+      // a faixa já é pintada com `--chat-pinned-bg`, e outro tom viraria uma terceira cor.
+      &--active {
+        color: var(--primary-color);
+
+        // Segundo sinal: com destaque quase preto (`--primary-color: #383838`) a cor
+        // ativa fica a um tom do hover. Rotação é forma, não tinta, então funciona com
+        // qualquer destaque. Aponta para baixo com a lista aberta.
+        .fa-angle-right {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    &-count {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    // Rotação animada só sem reduced-motion.
+    .fa-angle-right {
+      .chat-motion-safe({
+        transition: transform var(--avocado-t-fast);
+      });
+    }
+  }
+
+  // Envolve o scroller para o botão de descer ancorar em algo que não seja o
+  // composer (altura variável) nem o scroller (conteúdo que se move). Repassa o
+  // dimensionamento flex do pai.
+  &-streamWrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  // Volta para a mensagem mais nova; só aparece quando o stream não a segue
+  // (ChannelView.scrollDownButton()). Recuado do canto para não ficar sobre a borda
+  // de uma mensagem.
+  &-scrollDown {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    z-index: 2;
+
+    .chat-icon-circle(38px);
+    border: 1px solid var(--avocado-border-soft);
+    background-color: var(--body-bg);
+    color: var(--avocado-text-dark);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+
+    // O tom vai por cima da base opaca: `--chat-row-hover-bg` é preto a 3.5% para
+    // escurecer uma linha, e como `background` o botão ficaria transparente. Um
+    // background-image compõe sobre o background-color.
+    &:hover {
+      background-image: linear-gradient(
+        var(--chat-row-hover-bg),
+        var(--chat-row-hover-bg)
+      );
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+  }
+
+  &-stream {
+    .chat-scroll-y();
+    flex: 1;
+    min-height: 0;
+    padding: 12px 0;
+
+    // Ancorado embaixo: mensagens novas não deslocam a leitura de quem já está na
+    // última.
+    overflow-anchor: auto;
+    display: flex;
+    flex-direction: column;
+
+    // NÃO usar `justify-content: flex-end`: num container flex rolável isso joga o
+    // excesso para antes do início, onde nenhum navegador deixa rolar, e as mensagens
+    // antigas ficam inalcançáveis. Uma margem auto no primeiro item ancora embaixo
+    // enquanto sobra espaço e zera quando o conteúdo transborda.
+    justify-content: flex-start;
+
+    > :first-child {
+      margin-top: auto;
+    }
+  }
+
+  // Canal fechado ou arquivado: o composer é substituído, não só desabilitado,
+  // para o motivo ficar claro.
+  &-frozen {
+    .chat-flex-row(8px);
+    margin: 8px 12px 12px;
+    padding: 10px 12px;
+    border: 1px dashed var(--avocado-border-subtle);
+    border-radius: @chat-radius-md;
+    font-size: @chat-font-label;
+    color: var(--avocado-muted-label);
+
+    // Convite para entrar, não aviso: borda sólida e botão de verdade, para não
+    // parecer o mesmo beco sem saída de "canal fechado".
+    &--join {
+      border-style: solid;
+      color: var(--avocado-text-dark);
+
+      .Button {
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+    }
+
+    // Convite pendente tem duas respostas, numa linha própria, para quebrarem juntas
+    // abaixo da frase num drawer estreito.
+    &--invited {
+      flex-wrap: wrap;
+      border-color: var(--primary-color);
+    }
+
+    // Arquivado: o aviso leva à transcrição e oferece a saída a quem pode
+    // desarquivar. Quebra linha pelo mesmo motivo.
+    &--archived {
+      flex-wrap: wrap;
+
+      a {
+        color: var(--primary-color);
+      }
+    }
+
+    &-actions {
+      .chat-flex-row(@chat-space-xs);
+      margin-left: auto;
+      flex-shrink: 0;
+
+      .Button {
+        margin-left: 0;
+      }
+    }
+
+    // Modo lento é a única variante que acaba sozinha: borda sólida e cor plena,
+    // porque os segundos mudam diante do leitor e uma caixa tracejada contando
+    // pareceria quebrada.
+    &--slow {
+      border-style: solid;
+      color: var(--avocado-text-dark);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &-liveRegion {
+    .chat-sr-only();
+  }
+}
+
+// Separador de datas.
+.ChatDateSeparator {
+  .chat-flex-row(10px);
+  margin: @chat-message-group-gap 16px;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--avocado-border-soft);
+  }
+
+  &-label {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// Divisor de "mensagens novas". Colorido e com texto para não ser confundido com
+// o separador de datas.
+.ChatUnreadDivider {
+  .chat-flex-row(10px);
+  margin: @chat-message-group-gap 16px;
+  color: var(--chat-unread-line);
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+  }
+
+  &-label {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+}
+
+// ── Mensagem ──
+.ChatMessage {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 3px 16px;
+  margin-top: @chat-message-group-gap;
+
+  // Mensagens seguidas do mesmo autor se agrupam: sem avatar e nome repetidos, e
+  // com gap menor.
+  &--grouped {
+    margin-top: @chat-message-gap;
+  }
+
+  &:hover {
+    background: var(--chat-row-hover-bg);
+  }
+
+  // Endereçada ao leitor.
+  &--mentioned {
+    background: var(--chat-mention-bg);
+    box-shadow: inset 3px 0 0 var(--chat-mention-border);
+  }
+
+  &--selected {
+    background: var(--chat-row-selected-bg);
+  }
+
+  // Fixada por um moderador: vale para o canal todo, então é marcada na linha e não
+  // só no painel.
+  &--pinned {
+    background: var(--chat-pinned-bg);
+    box-shadow: inset 3px 0 0 var(--chat-pinned-border);
+  }
+
+  // Denunciada, para moderadores. Depois de fixada para a barra dela vencer: a
+  // denúncia é a que pede ação.
+  &--flagged {
+    box-shadow: inset 3px 0 0 var(--chat-flagged-border);
+  }
+
+  // Aplicada quando o stream salta para uma linha, para ficar claro qual era a
+  // mensagem. Fundo e barra lateral vivem os dois no keyframe: numa linha já tingida
+  // só o fundo quase não muda, e fora da animação a barra sobreviveria ao fundo.
+  &--flash {
+    animation: chat-flash @chat-jump-highlight ease-out;
+  }
+
+  &-pinMark {
+    .chat-flex-row(4px);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--chat-pinned-border);
+  }
+
+  &-flagMark {
+    .chat-flex-row(4px);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--chat-flagged-border);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--chat-flagged-border);
+      text-decoration: underline;
+    }
+  }
+
+  &-gutter {
+    flex-shrink: 0;
+    width: @chat-avatar-size;
+
+    .Avatar {
+      width: @chat-avatar-size;
+      height: @chat-avatar-size;
+    }
+  }
+
+  // Badges de grupo sobre o avatar, não ao lado do nome: a linha de meta já tem
+  // nome, selo de bot, verificado e horário, e um badge ali empurraria o horário.
+  // O wrapper tem exatamente o tamanho do avatar, para os offsets abaixo.
+  &-avatar {
+    position: relative;
+    display: block;
+    width: @chat-avatar-size;
+    height: @chat-avatar-size;
+  }
+
+  // No canto de baixo do avatar, do lado oposto ao corpo. Acima da foto, como o
+  // core faz nos posts, parecia um emblema sobre o rosto no avatar de 32px.
+  &-badges {
+    position: absolute;
+    right: -4px;
+    bottom: -3px;
+    // Quatro badges compactados dão 35px num bloco de 32px; sem isto o quarto desce
+    // para outra linha.
+    white-space: nowrap;
+    // Não intercepta o clique que abre o perfil; o core faz o mesmo em
+    // .PostUser-badges, e `badges--packed` devolve o evento a cada Badge para o tooltip.
+    pointer-events: none;
+
+    .Badge {
+      // Os 20px do core são para o avatar de post; aqui na mesma proporção do avatar.
+      .Badge--size(14px);
+      // Sobrepõe a foto, então precisa de uma borda contra ela; no core o badge fica
+      // fora do avatar.
+      box-shadow: 0 0 0 2px var(--body-bg);
+    }
+
+    // Metade de cada badge visível. O core esconde 65% de um de 20px, o que em 14px
+    // deixaria 5px de ícone.
+    &.badges--packed {
+      --packing-space: 7px;
+    }
+  }
+
+  // Em mensagem agrupada a coluna do avatar mostra o horário no hover.
+  &--grouped &-gutter {
+    .chat-flex-center();
+    align-items: flex-start;
+    font-size: 10px;
+    color: var(--avocado-muted-icon);
+    opacity: 0;
+    transition: opacity var(--avocado-t-fast);
+  }
+
+  &--grouped:hover &-gutter {
+    opacity: 1;
+  }
+
+  &--online &-gutter .Avatar {
+    .chat-online-ring(2px);
+  }
+
+  &-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-meta {
+    .chat-flex-row(8px);
+    margin-bottom: 2px;
+  }
+
+  &-author {
+    font-size: @chat-font-label;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  &-time {
+    font-size: 11px;
+    color: var(--avocado-muted-label);
+  }
+
+  // Só no tombstone, e discreto: ação irreversível deve ser alcançável, não
+  // convidativa.
+  &-purge {
+    flex-shrink: 0;
+    opacity: 0;
+    color: var(--avocado-muted-label);
+    transition: opacity var(--avocado-t-fast), color var(--avocado-t-fast);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--alert-error-bg, #d83e3e);
+    }
+  }
+
+  &:hover &-purge,
+  &-purge:focus-visible {
+    opacity: 1;
+  }
+
+  &-content {
+    font-size: @chat-font-message;
+    line-height: 1.45;
+    color: var(--text-color);
+    overflow-wrap: break-word;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    // Linhas de chat são curtas; espaçamento de parágrafo desperdiça altura.
+    p {
+      margin-bottom: 4px;
+    }
+  }
+
+  // Nota inline, não controle.
+  &-editedMark {
+    font-size: 11px;
+    color: var(--avocado-muted-label);
+    margin-left: 4px;
+    white-space: nowrap;
+  }
+
+  // Tombstone de mensagem apagada.
+  &-tombstone {
+    .chat-flex-row(@chat-space-sm);
+    justify-content: space-between;
+
+    font-size: @chat-font-label;
+    font-style: italic;
+    color: var(--chat-tombstone-color);
+  }
+
+  // Preview da resposta acima do corpo. É um botão (salta para a mensagem
+  // respondida), então o chrome de botão do navegador sai.
+  &-replyTo {
+    .chat-flex-row(6px);
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 3px;
+    padding: 0 0 0 8px;
+    border: 0;
+    border-left: 2px solid var(--avocado-border-subtle);
+    border-radius: 0;
+    background: none;
+    font-size: @chat-font-meta;
+    text-align: left;
+    color: var(--avocado-muted-label);
+    cursor: pointer;
+    transition: border-color var(--avocado-t-fast), color var(--avocado-t-fast);
+
+    &:hover,
+    &:focus-visible {
+      border-left-color: var(--primary-color);
+      color: var(--avocado-body-color, inherit);
+    }
+
+    &-content {
+      .chat-truncate();
+      max-width: 420px;
+    }
+  }
+
+  // Barra de ações no hover, no canto superior direito.
+  &-actions {
+    position: absolute;
+    top: -12px;
+    right: 16px;
+    .chat-flex-row(2px);
+    padding: 2px;
+    border: 1px solid var(--avocado-border-subtle);
+    border-radius: @chat-radius-sm;
+    background: var(--body-bg);
+    box-shadow: var(--shadow-medium);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--avocado-t-fast);
+  }
+
+  &:hover &-actions,
+  &-actions:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &-action {
+    .chat-icon-circle(26px; transparent);
+    border: 0;
+    color: var(--avocado-muted-icon);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+      color: var(--avocado-text-dark);
+    }
+
+    // Curtida ativa: mesmo estado ativo do chip de reação, sem uma terceira cor.
+    &--active {
+      color: var(--primary-color);
+    }
+  }
+
+  // Toda mensagem fica à esquerda, inclusive a do remetente: espelhar à direita
+  // funciona para duas pessoas, mas divide a conversa num canal movimentado.
+}
+
+// Toggle de fixadas do header, com o painel aberto.
+.ChatChannel-headerAction--active {
+  color: var(--primary-color);
+}
+
+// Chips de reação sob a mensagem.
+.ChatReactions {
+  .chat-flex-row(4px);
+  flex-wrap: wrap;
+  margin-top: 4px;
+
+  &-chip {
+    .chat-flex-row(4px);
+    padding: 1px 7px;
+    border: 1px solid var(--chat-reaction-border);
+    border-radius: @chat-radius-pill;
+    background: var(--chat-reaction-bg);
+    font-size: @chat-font-meta;
+    font-weight: 700;
+    color: var(--avocado-muted-label);
+    cursor: pointer;
+    transition:
+      background var(--avocado-t-fast),
+      border-color var(--avocado-t-fast);
+
+    &:hover {
+      border-color: var(--avocado-muted-icon);
+    }
+
+    // Reação do próprio leitor.
+    &--active {
+      background: var(--chat-reaction-bg-active);
+      border-color: var(--primary-color);
+      color: var(--avocado-text-dark);
+    }
+
+    img.emoji {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // Ícone do chip de curtida; herda a cor do chip, inclusive no ativo, o que um
+  // emoji não faria.
+  &-icon {
+    font-size: 12px;
+  }
+
+  &-chip--active &-icon {
+    color: var(--primary-color);
+  }
+}
+
+// Anexos.
+.ChatUploads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+
+  &-image {
+    max-width: 320px;
+    max-height: 240px;
+    border-radius: @chat-radius-sm;
+    border: 1px solid var(--avocado-border-subtle);
+    // Definido pela largura/altura salvas, para a linha não fazer reflow.
+    background: var(--avocado-surface-1);
+  }
+
+  &-file {
+    .chat-flex-row(8px);
+    padding: 7px 10px;
+    .chat-surface(@chat-radius-sm);
+    font-size: @chat-font-label;
+    max-width: 320px;
+
+    &-name {
+      .chat-truncate();
+    }
+
+    &-size {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--avocado-muted-label);
+    }
+  }
+}
+
+// Faixa de thread sob a mensagem raiz.
+.ChatThreadIndicator {
+  .chat-flex-row(8px);
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--chat-thread-strip);
+  border-radius: @chat-radius-sm;
+  background: none;
+  cursor: pointer;
+  font-size: @chat-font-meta;
+  color: var(--avocado-muted-label);
+  transition: background var(--avocado-t-fast);
+  width: 100%;
+  text-align: left;
+
+  &:hover {
+    background: var(--chat-row-hover-bg);
+  }
+
+  &-count {
+    font-weight: 800;
+    color: var(--primary-color);
+  }
+
+  &-preview {
+    .chat-truncate();
+    flex: 1;
+  }
+}
+
+// ── Composer ──
+.ChatComposer {
+  flex-shrink: 0;
+  padding: 8px 12px 12px;
+  background: var(--body-bg);
+
+  // Containing block do .ChatAutocomplete, que fica em `bottom: 100%` para a lista
+  // abrir para cima, sobre o stream.
+  position: relative;
+
+  // Coluna: o texto em cima e os controles numa linha abaixo, para o texto usar a
+  // largura toda.
+  &-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 8px 4px 12px;
+    border: 1px solid var(--avocado-border-subtle);
+    border-radius: @chat-radius-md;
+    background: var(--avocado-surface-2);
+    transition: border-color var(--avocado-t-fast);
+
+    &:focus-within {
+      border-color: var(--primary-color);
+    }
+  }
+
+  // Contador e botões, à direita, sob o texto.
+  &-bar {
+    .chat-flex-row(@chat-space-xs);
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  // Textarea que cresce, com teto para não engolir o stream. O teto é o menor
+  // entre pixels e fração da viewport: `resize()` põe inline a altura total do
+  // conteúdo e só isto a segura. Escapado porque o LESS lê `min(220px, 30vh)` como
+  // função própria e falha com unidades mistas.
+  &-input {
+    width: 100%;
+    min-height: @chat-composer-min-height;
+    max-height: @chat-composer-max-height;
+    max-height: ~"min(@{chat-composer-max-height}, 30vh)";
+    // Suficiente para uma linha de 21px sem cortar (21 + 12 < min-height).
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    resize: none;
+    font-size: @chat-font-message;
+    line-height: 1.4;
+    color: var(--avocado-text-dark);
+    .chat-scroll-y();
+
+    &:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    &::placeholder {
+      color: var(--avocado-muted-placeholder);
+    }
+  }
+
+  // Uma linha de botões, não um botão: com `.chat-icon-circle` aqui o container
+  // teria 30px ao lado dos 32px do enviar e os centros desalinhariam.
+  &-tools {
+    display: flex;
+    align-items: center;
+    gap: @chat-space-xs;
+    flex-shrink: 0;
+  }
+
+  &-tools,
+  &-send {
+    margin-bottom: 0;
+  }
+
+  &-tool {
+    // Mesmo box do botão de enviar, para os dois serem intercambiáveis na linha.
+    .chat-icon-circle(@chat-composer-button; transparent);
+    border: 0;
+    color: var(--avocado-muted-icon);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--chat-row-hover-bg);
+      color: var(--avocado-text-dark);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &-send {
+    // `--button-primary-*`, não `--primary-color` + `--header-color`: sem header
+    // colorido o core define --header-color como a própria primária, e o ícone some no
+    // fundo. Este par é o que o core calcula para botão primário, com texto por
+    // contraste YIQ.
+    .chat-icon-circle(@chat-composer-button; var(--button-primary-bg, var(--primary-color)));
+    border: 0;
+    color: var(--button-primary-color, #fff);
+    cursor: pointer;
+
+    // Sem ajuste óptico: o Font Awesome já centraliza o glifo no em box. O offset
+    // inferior está em `-tools` acima.
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  // Barra de contexto de resposta/edição acima do input.
+  &-context {
+    .chat-flex-row(8px);
+    margin-bottom: 6px;
+    padding: 6px 10px;
+    border-radius: @chat-radius-sm;
+    background: var(--avocado-surface-1);
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+
+    &-label {
+      font-weight: 800;
+      color: var(--avocado-text-dark);
+    }
+
+    &-preview {
+      .chat-truncate();
+      flex: 1;
+    }
+  }
+
+  // Anexos pendentes, antes do envio.
+  &-pending {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  // Contador de caracteres, só perto do limite. Fica dentro do shell, à esquerda
+  // dos controles; fora dele a borda do drawer o cortava.
+  &-counter {
+    flex-shrink: 0;
+    // Na linha dos controles, já alinhado aos botões. `margin-right: auto` o mantém
+    // longe do botão de enviar.
+    margin-right: auto;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--avocado-muted-label);
+
+    &--warning {
+      color: var(--chat-unread-line);
+      font-weight: 800;
+    }
+
+    // Acima do limite o envio será recusado; vira pílula porque em 11px só a cor
+    // parece "quase lá".
+    &--over {
+      padding: 1px 8px;
+      border-radius: @chat-radius-pill;
+      background: var(--chat-unread-line);
+      color: #fff;
+      font-weight: 800;
+    }
+  }
+
+}
+
+// Autocomplete de @menções e :emoji:.
+.ChatAutocomplete {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: var(--avocado-z-dropdown);
+  max-height: 260px;
+  margin-bottom: 6px;
+  .chat-scroll-y();
+  .chat-surface(@chat-radius-md);
+  box-shadow: var(--shadow-medium);
+
+  &-item {
+    .chat-flex-row(8px);
+    width: 100%;
+    padding: 7px 12px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: @chat-font-label;
+    color: var(--avocado-text-dark);
+
+    &--active,
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+
+    .Avatar {
+      width: 22px;
+      height: 22px;
+    }
+
+    &-hint {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--avocado-muted-label);
+    }
+  }
+}
+
+// Indicador de digitação.
+.ChatTyping {
+  .chat-flex-row(6px);
+  min-height: 18px;
+  padding: 0 12px 4px;
+  font-size: 11px;
+  color: var(--avocado-muted-label);
+
+  &-dots {
+    .chat-flex-row(2px);
+
+    span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+  }
+
+  .chat-motion-safe({
+    &-dots span {
+      animation: chat-typing 1.2s infinite ease-in-out;
+
+      &:nth-child(2) { animation-delay: 0.15s; }
+      &:nth-child(3) { animation-delay: 0.3s; }
+    }
+  });
+}
+
+@keyframes chat-typing {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-2px); }
+}
+
+// Destaque do salto para mensagem. Fica aceso quase todo o tempo e só então
+// esvai: o scroll é suave, e um destaque que começa a sumir na hora já está pela
+// metade quando a linha para. Barra e fundo esvaem juntos; com a barra só na
+// classe, ela ficava acesa até o JS tirar a classe.
+@keyframes chat-flash {
+  0% {
+    background: var(--chat-pinned-bg);
+    box-shadow: inset 3px 0 0 var(--chat-pinned-border);
+  }
+  80% {
+    background: var(--chat-pinned-bg);
+    box-shadow: inset 3px 0 0 var(--chat-pinned-border);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+
+// ── Painel de thread ──
+.ChatThreadPanel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: @chat-thread-panel-width;
+  min-height: 0;
+  border-left: 1px solid var(--avocado-border-soft);
+  background: var(--body-bg);
+
+  &-header {
+    .chat-flex-row(8px);
+    flex-shrink: 0;
+    height: @chat-header-height;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--avocado-border-soft);
+  }
+
+  &-title {
+    .chat-truncate();
+    flex: 1;
+    font-size: @chat-font-label;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  &-stream {
+    .chat-scroll-y();
+    flex: 1;
+    min-height: 0;
+    padding: 12px 0;
+  }
+
+  // Em viewport estreita a thread ocupa o painel do canal.
+  @media (max-width: @chat-mobile-breakpoint) {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    border-left: 0;
+    z-index: var(--avocado-z-sidebar);
+  }
+}
+
+// ── Busca de mensagens ──
+// Ocupa o painel do canal na rota `chat.search`, num canal (pelo botão do header) ou
+// em todos.
+.ChatSearch {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+
+  &-bar {
+    .chat-flex-row(8px);
+    flex-shrink: 0;
+    padding: 0 10px;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+  }
+
+  &-icon {
+    flex-shrink: 0;
+    color: var(--avocado-muted-icon);
+  }
+
+  &-input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    border: 0;
+    background: none;
+    font-size: @chat-font-message;
+    color: var(--avocado-text-dark);
+
+    &:focus {
+      outline: none;
+    }
+
+    // O Chrome desenha seu próprio botão de limpar; o nosso é o único.
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+
+  &-scope {
+    flex-shrink: 0;
+    padding: 8px 12px 0;
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+
+  &-results {
+    .chat-scroll-y();
+    flex: 1;
+    min-height: 0;
+    margin-top: 8px;
+  }
+
+  &-result {
+    .chat-flex-row(10px);
+    align-items: flex-start;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+
+    .Avatar {
+      width: @chat-avatar-size-compact;
+      height: @chat-avatar-size-compact;
+      flex-shrink: 0;
+    }
+
+    &-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &-meta {
+      .chat-flex-row(8px);
+      margin-bottom: 2px;
+    }
+
+    &-author {
+      font-size: @chat-font-label;
+      font-weight: 800;
+      color: var(--avocado-text-dark);
+    }
+
+    &-channel,
+    &-time {
+      font-size: 11px;
+      color: var(--avocado-muted-label);
+    }
+
+    &-excerpt {
+      .chat-truncate();
+      font-size: @chat-font-label;
+      color: var(--text-color);
+    }
+  }
+}
+
+// ── Minhas threads ──
+.ChatThreadsList {
+  .chat-scroll-y();
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+
+  // No drawer a lista usa o shell de painel: header fixo e linhas rolando abaixo,
+  // como fixadas e busca.
+  &--embedded {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+
+    .ChatThreadsList-rows,
+    .ChatBrowse-empty {
+      .chat-scroll-y();
+      flex: 1;
+      min-height: 0;
+      padding: 12px;
+    }
+  }
+
+  // Canal da lista filtrada, depois do título.
+  &-scope {
+    margin-left: 6px;
+    font-weight: 500;
+    color: var(--avocado-muted-label);
+
+    &::before {
+      content: "\00b7 ";
+    }
+  }
+
+  &-row {
+    .chat-flex-row(10px);
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+
+    &--unread .ChatThreadsList-title {
+      font-weight: 900;
+    }
+  }
+
+  &-icon {
+    flex-shrink: 0;
+    color: var(--avocado-muted-icon);
+  }
+
+  &-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-title {
+    .chat-truncate();
+    font-size: @chat-font-label;
+    font-weight: 700;
+    color: var(--avocado-text-dark);
+  }
+
+  &-meta {
+    .chat-flex-row(8px);
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--avocado-muted-label);
+  }
+
+  &-badge {
+    flex-shrink: 0;
+    padding: 0 6px;
+    border-radius: @chat-radius-pill;
+    background: var(--primary-color);
+    color: var(--button-primary-color, #fff);
+    font-size: 11px;
+    font-weight: 800;
+  }
+}
+
+// ── Seletor de destino da barra de seleção ──
+// A posição é decidida aqui, não pelo auto-flip do core: ao abrir, o
+// Dropdown.oncreate remove `--top`/`--right` e recalcula, então passar as classes
+// por `menuClassName` não sobrevive. A barra fica no fundo do canal, então abrir
+// para baixo nunca serve. A especificidade (0,2,0) resolve.
+.ChatSelectionBar-move {
+  .Dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    left: auto;
+    right: 0;
+    margin-bottom: 4px;
+
+    // Fórum grande tem mais canais do que cabem; o menu rola em vez de passar da
+    // borda de cima.
+    max-height: 260px;
+    overflow-y: auto;
+  }
+}
+
+// ── Browse de canais: ver browse.less ──
+
+// ── Painel de info do canal ──
+.ChatChannelInfo {
+  // Marca do canal no título do modal. Fica colada ao nome (span ao lado de text
+  // node), então precisa de espaço e de alinhamento: as line boxes diferem e o glifo
+  // subiria.
+  &-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-right: @chat-space-sm;
+  }
+
+  &-tabs {
+    .chat-flex-row(@chat-space-xs);
+    padding: 0 @chat-space-md;
+    border-bottom: 1px solid var(--avocado-border-soft);
+  }
+
+  &-tab {
+    padding: @chat-space-md;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    font-size: @chat-font-label;
+    font-weight: 700;
+    color: var(--avocado-muted-label);
+
+    &--active {
+      color: var(--avocado-text-dark);
+      border-bottom-color: var(--primary-color);
+    }
+  }
+
+  &-section {
+    padding: @chat-space-lg;
+    border-bottom: 1px solid var(--avocado-border-soft);
+
+    &-label {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      color: var(--avocado-muted-label);
+      margin-bottom: @chat-space-md;
+    }
+
+    // Controles de uma seção precisam de espaço entre si, não só das bordas.
+    > label,
+    > .Switch,
+    > .Button {
+      display: block;
+      margin-bottom: @chat-space-md;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    // "Fechar canal" e "Arquivar canal": o cinza do `.Button` do core some no painel
+    // tingido e parece desabilitado (como no ChannelFormModal).
+    > .Button {
+      .chat-action-btn();
+    }
+
+    .FormControl {
+      width: 100%;
+      margin-top: @chat-space-sm;
+    }
+
+    .helpText {
+      margin-top: @chat-space-sm;
+    }
+  }
+
+  // Header da aba de membros: contagem e o botão de adicionar.
+  &-memberHeader {
+    .chat-flex-row(@chat-space-sm);
+    margin-bottom: @chat-space-md;
+  }
+
+  &-memberCount {
+    flex: 1;
+    font-size: @chat-font-label;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  &-filter {
+    margin-bottom: @chat-space-md;
+  }
+
+  &-memberList {
+    .chat-scroll-y();
+    max-height: 320px;
+  }
+
+  &-member {
+    .chat-flex-row(@chat-space-sm);
+    padding: @chat-space-sm @chat-space-xs;
+    font-size: @chat-font-label;
+
+    &--online .Avatar {
+      .chat-online-ring(2px);
+    }
+
+    .Avatar {
+      width: 26px;
+      height: 26px;
+    }
+
+    // Sempre visível, não só no hover: é o único jeito de remover alguém, e o de
+    // adicionar é um "+" visível. A contenção vem da cor: apagado em repouso, vermelho
+    // no hover.
+    &-remove {
+      flex-shrink: 0;
+      margin-left: auto;
+      color: var(--avocado-muted-icon);
+      transition: color var(--avocado-t-fast);
+    }
+
+    &-remove:hover:not(:disabled),
+    &-remove:focus-visible {
+      // `--error-color`, não `--alert-error-color`, que é #fff (texto sobre fundo de
+      // alerta).
+      color: var(--error-color, #d83e3e);
+    }
+  }
+
+  // Convites pendentes sob a lista, separados por uma linha e não por um box: é a
+  // mesma lista continuada.
+  &-invited {
+    margin-top: @chat-space-md;
+    padding-top: @chat-space-md;
+    border-top: 1px solid var(--avocado-border-soft);
+  }
+
+  &-member--invited {
+    color: var(--avocado-muted-label);
+
+    .Avatar {
+      opacity: 0.7;
+    }
+  }
+
+  // Transferir o canal: apagado como o remover, mas na primária no hover, porque é
+  // passar adiante, não expulsar.
+  &-member-transfer {
+    flex-shrink: 0;
+    color: var(--avocado-muted-icon);
+    transition: color var(--avocado-t-fast);
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+      color: var(--primary-color);
+    }
+  }
+
+  // Transferência pendente, acima da lista, com as respostas ao lado.
+  &-transfer {
+    .chat-flex-row(@chat-space-sm);
+    flex-wrap: wrap;
+    margin: @chat-space-sm 0;
+    padding: @chat-space-sm @chat-space-md;
+    border: 1px solid var(--avocado-border-soft);
+    border-radius: @chat-radius-sm;
+    font-size: @chat-font-label;
+
+    > .fa-crown {
+      color: var(--primary-color);
+    }
+
+    &-text {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+
+    &-actions {
+      .chat-flex-row(@chat-space-xs);
+      flex-wrap: wrap;
+    }
+  }
+
+  // Ações destrutivas ficam separadas das rotineiras.
+  &-danger {
+    padding: @chat-space-lg;
+  }
+
+  // Apagar canal é irreversível. Compartilhado com o ChannelFormModal; o motivo da
+  // cor está em `.chat-danger-btn()`.
+  &-danger &-deleteButton {
+    .chat-danger-btn();
+
+    // Óptico: devolve o label à borda esquerda da seção, descontando o padding do
+    // alvo de clique.
+    margin-left: -@chat-space-sm;
+  }
+}
+
+// Código de transferência: seis dígitos espaçados, para um erro de leitura saltar à vista.
+.ChatTransferCodeModal-code {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+
+// ── Modo de seleção ──
+// Barra em massa de "Citar em discussão" / "Copiar" / "Mover".
+.ChatSelectionBar {
+  .chat-flex-row(8px);
+  // Também vive no drawer, então precisa caber em ~320px. Quebra entre a contagem e
+  // as ações antes de quebrar entre ações, e nunca dentro de uma.
+  flex-wrap: wrap;
+  row-gap: 6px;
+  position: sticky;
+  bottom: 0;
+  z-index: var(--avocado-z-sidebar);
+  padding: 10px 12px;
+  border-top: 1px solid var(--avocado-border-subtle);
+  background: var(--body-bg);
+  box-shadow: var(--shadow-medium);
+
+  &-count {
+    font-size: @chat-font-label;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+    // O único label daqui que nunca pode quebrar.
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  &-actions {
+    .chat-flex-row(6px);
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
+
+    // Cada botão mantém o label numa linha; a quebra é entre eles.
+    > * {
+      flex-shrink: 0;
+    }
+
+    .Button {
+      white-space: nowrap;
+    }
+  }
+}
+
+// ── Skeletons ──
+// Placeholders no formato do conteúdo, para o layout não pular quando os dados
+// chegam. As formas de Skeletons.tsx e estas regras mudam juntas.
+.ChatSkeleton {
+  padding: 12px 16px;
+
+  // Para skeleton dentro de um container que já tem padding.
+  &--flush {
+    padding: 0;
+  }
+
+  &-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: @chat-message-group-gap;
+
+    &--tight {
+      margin-bottom: 14px;
+    }
+  }
+
+  &-avatar {
+    .chat-icon-circle(@chat-avatar-size; var(--avocado-surface-1));
+
+    &--large { width: 38px; height: 38px; }
+    &--small { width: @chat-avatar-size-compact; height: @chat-avatar-size-compact; }
+    &--tiny  { width: 16px; height: 16px; border-radius: 4px; }
+  }
+
+  &-lines {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-line {
+    height: 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    background: var(--avocado-surface-1);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    // Mesmo peso do texto que substituem, para ter o ritmo do card real.
+    &--title { height: 13px; }
+    &--meta  { height: 8px; }
+
+    &--short { width: 30%; }
+    &--long  { width: 75%; }
+  }
+
+  // ── Painel do canal inteiro ──
+  &-channel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-channelStream {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  // No lugar do shell do composer, na altura real.
+  &-composer {
+    flex-shrink: 0;
+    height: @chat-composer-min-height;
+    margin: 8px 12px 12px;
+    border-radius: @chat-radius-md;
+    background: var(--avocado-surface-1);
+  }
+
+  // ── Sidebar ──
+  &-sidebar {
+    padding: 12px;
+  }
+
+  &-quickLink,
+  &-channelRow {
+    .chat-flex-row(8px);
+    height: 32px;
+    padding: 0 10px;
+  }
+
+  &-channelRow {
+    height: 36px;
+  }
+
+  // Título de seção "CANAIS".
+  &-heading {
+    width: 70px;
+    height: 8px;
+    margin: 18px 10px 8px;
+    border-radius: 4px;
+    background: var(--avocado-surface-1);
+  }
+
+  // ── Diversos ──
+  &-memberRow {
+    .chat-flex-row(8px);
+    padding: 7px 4px;
+  }
+
+  // No lugar do botão de ação de um card.
+  &-button {
+    align-self: center;
+    flex-shrink: 0;
+    width: 76px;
+    height: 30px;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+  }
+
+  .chat-motion-safe({
+    &-avatar,
+    &-line,
+    &-heading,
+    &-button,
+    &-composer {
+      animation: chat-pulse 1.4s ease-in-out infinite;
+    }
+  });
+}
+
+@keyframes chat-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+// Sidebar vazio. Numa instalação nova é o único caminho para criar o primeiro
+// canal, então não pode ser beco sem saída.
+.ChatSidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: @chat-space-xl @chat-space-md;
+  text-align: center;
+
+  &-icon {
+    .chat-icon-circle(48px);
+    margin-bottom: @chat-space-md;
+    font-size: 20px;
+    color: var(--avocado-muted-icon);
+  }
+
+  p {
+    margin: 0 0 @chat-space-lg;
+    font-size: @chat-font-label;
+    line-height: 1.5;
+    color: var(--avocado-muted-label);
+  }
+
+  // Cuida do gap entre os botões: `Button--block` só define largura.
+  &-actions {
+    display: flex;
+    flex-direction: column;
+    gap: @chat-space-sm;
+    align-self: stretch;
+  }
+}
+
+// ── Modais ──
+// Classe compartilhada por todo modal do chat, para espaçamento, labels e help
+// concordarem.
+.ChatModal {
+  // Todo gap aqui vem da escala de espaçamento de variables.less.
+  .Modal-body {
+    padding: @chat-space-lg;
+  }
+
+  .Form-group {
+    margin-bottom: @chat-space-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    > label {
+      display: block;
+      // O label pertence ao campo abaixo, então fica mais perto dele do que o campo do
+      // próximo.
+      margin-bottom: @chat-space-sm;
+      font-size: @chat-font-label;
+      font-weight: 700;
+      color: var(--avocado-text-dark);
+    }
+  }
+
+  .helpText {
+    margin-top: @chat-space-sm;
+    font-size: @chat-font-meta;
+    line-height: 1.4;
+    color: var(--avocado-muted-label);
+  }
+
+  // Linha de checkbox: label primeiro e inline, para o box alinhar com o texto.
+  label.checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: @chat-space-sm;
+    margin-bottom: @chat-space-md;
+    font-size: @chat-font-label;
+    font-weight: 600;
+    color: var(--avocado-text-dark);
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    input[type='checkbox'] {
+      // 2px para baixo: alinhado ao topo de um label com line-height 1.4 o box parece
+      // flutuar.
+      margin: 2px 0 0;
+      flex-shrink: 0;
+    }
+  }
+
+  // O help sob um checkbox pertence a ele: recuado até o texto do label, não até o
+  // box.
+  label.checkbox + .helpText {
+    margin: 0 0 @chat-space-md (@chat-space-sm + @chat-checkbox-size);
+  }
+
+  .FormControl {
+    width: 100%;
+  }
+
+  select.FormControl {
+    // O Flarum deixa o select na largura intrínseca, uma fração da do input acima.
+    width: 100%;
+
+    // O `.FormControl` do core tem 36px, padding vertical de 8px, borda de 2px e
+    // `line-height: 1.5` em 13px: uma line box de 19.5px num content box de 16px. O
+    // input rola o texto e esconde isso; o select corta a opção em cima e embaixo.
+    // `min-height` com `height: auto` para casar com os inputs e crescer se o tema usar
+    // fonte maior.
+    height: auto;
+    min-height: 36px;
+    padding: 7px 13px;
+    line-height: 1.3;
+  }
+
+  // Linha de envio: ação primária de largura total, mais afastada dos campos do que
+  // eles entre si, para fechar o formulário.
+  .Button--block {
+    margin-top: @chat-space-lg;
+  }
+}
+
+// ── Formulário de canal ──
+// Diálogo de criar/editar. São dezoito controles: em uma coluna de 375px viraria um
+// rolo de campos, então são duas colunas de grupos com título e o envio fixo no
+// rodapé.
+.ChannelFormModal {
+  // `&.Modal--large` em vez de só largura: o core define `.Modal--large {
+  // max-width: 800px }` com a mesma especificidade, e o vencedor dependeria da ordem
+  // de concatenação.
+  @media @tablet-up {
+    &.Modal--large {
+      max-width: 880px;
+      // A margem vertical é definida aqui porque o teto de altura do body é calculado
+      // sobre ela; o core e os temas usam valores diferentes.
+      margin: @chat-modal-margin auto;
+    }
+  }
+
+  // Header, body e footer são três faixas; só o body rola, para título e envio
+  // ficarem à vista.
+  @media @tablet-up {
+    .Modal-content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: ~"calc(100vh - @{chat-modal-reserved})";
+      max-height: ~"calc(100dvh - @{chat-modal-reserved})";
+    }
+  }
+
+  &-header {
+    .chat-flex-row(@chat-space-md);
+    // Sobrescreve o header centralizado do core: com ícone ao lado, centralizar
+    // desalinha o par do resto.
+    padding: @chat-space-lg @chat-space-xl;
+    text-align: left;
+    border-bottom: 1px solid var(--avocado-border-soft);
+    // Espaço para o botão de fechar, que o core posiciona absoluto no canto.
+    padding-right: 52px;
+
+    h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      text-align: left;
+      color: var(--avocado-text-dark);
+    }
+  }
+
+  &-headerIcon {
+    .chat-icon-circle(44px);
+    font-size: 22px;
+    color: var(--avocado-muted-icon);
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &-headerText {
+    min-width: 0;
+  }
+
+  // Nome do canal, ou a frase de orientação antes de ele ter um. Truncado: o header
+  // é uma faixa fixa e um nome longo não pode empurrar o body.
+  &-headerSubtitle {
+    .chat-truncate();
+    margin: 2px 0 0;
+    font-size: @chat-font-label;
+    color: var(--avocado-muted-label);
+  }
+
+  // As duas classes porque `.ChatModal .Modal-body` define o padding comum e
+  // venceria uma classe só.
+  &-body.Modal-body {
+    padding: @chat-space-lg @chat-space-xl;
+
+    @media @tablet-up {
+      flex: 1;
+      min-height: 0;
+      .chat-scroll-y();
+
+      // O teto vai no próprio elemento que rola em vez de depender do `flex: 1` contra
+      // o max-height do pai: essa cadeia quebra quando um tema dá altura ao
+      // `.Modal-content`, e o envio sairia da tela.
+      //
+      // Reservado = margens do diálogo + faixas de header e footer.
+      max-height: ~"calc(100vh - @{chat-modal-reserved} - @{chat-modal-bands})";
+      max-height: ~"calc(100dvh - @{chat-modal-reserved} - @{chat-modal-bands})";
+    }
+
+    @media @phone {
+      padding: @chat-space-lg;
+    }
+  }
+
+  &-grid {
+    display: grid;
+    // Uma coluna abaixo do breakpoint de tablet (media query no fim do bloco).
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: @chat-space-lg;
+    align-items: start;
+  }
+
+  // Grupo com título. A borda faz duas colunas lerem como duas colunas, e não como
+  // pares de campos por linha.
+  &-section {
+    min-width: 0;
+    padding: @chat-space-md;
+    border: 1px solid var(--avocado-border-soft);
+    border-radius: @chat-radius-md;
+    // Tom translúcido em vez de `--avocado-surface-1`: fora do Avocado esse token vira
+    // `--control-bg`, a mesma cor dos inputs, e o card sumiria atrás deles.
+    background: var(--chat-row-hover-bg);
+  }
+
+  // O preview da imagem divide o tom do card, então precisa de borda própria. Mesmo
+  // tamanho do preview do emoji picker: os dois se alternam no mesmo slot, e tamanhos
+  // diferentes mudavam a altura da seção.
+  .ChatChannelForm-imagePreview {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--avocado-border-subtle);
+  }
+
+  // Identidade e ciclo de vida ocupam a largura toda: nome e descrição são o
+  // assunto do diálogo.
+  &-section--wide {
+    // Escapado: o LESS lê `1 / -1` como divisão e gera `grid-column: -1`, e o card
+    // iria para uma terceira coluna implícita.
+    grid-column: ~"1 / -1";
+  }
+
+  &-sectionTitle {
+    margin: 0 0 @chat-space-md;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--avocado-muted-label);
+  }
+
+  // A descrição só cresce para baixo. `resize: both` deixava arrastar além do card.
+  // As declarações de largura não são redundantes: o arraste grava um `width` inline
+  // que sobrevive à regra, e só `!important` vence estilo inline.
+  textarea.FormControl {
+    resize: vertical;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  // Ícone e nome numa linha: a coluna do emoji é o preview do picker mais o botão
+  // de limpar.
+  &-nameRow {
+    display: grid;
+    // O nome fica com a maior parte: é o único campo obrigatório.
+    grid-template-columns: minmax(0, 1.4fr) minmax(200px, 1fr);
+    gap: @chat-space-md;
+    align-items: start;
+
+    > div {
+      min-width: 0;
+    }
+
+    // `.ChatModal .Form-group > label` não alcança estes, um nível abaixo; o estilo é
+    // repetido aqui em vez de afrouxar o seletor para todos os modais.
+    label {
+      display: block;
+      margin-bottom: @chat-space-sm;
+      font-size: @chat-font-label;
+      font-weight: 700;
+      color: var(--avocado-text-dark);
+    }
+  }
+
+  // Slot do ícone: uma linha de label + switch e o campo escolhido. Os dois campos
+  // têm a mesma largura para o switch não redimensionar a linha.
+  &-iconField {
+    min-width: 0;
+
+    // Os dois lados reservam o mesmo espaço para o help, para o switch não mudar a
+    // altura da seção.
+    .helpText {
+      min-height: 2.8em;
+    }
+
+    // E o mesmo espaço no total: os lados têm formas diferentes, e só o help igual
+    // ainda deixava alguns pixels de diferença.
+    &-body {
+      min-height: 84px;
+    }
+
+    &-head {
+      .chat-flex-row(@chat-space-sm);
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: @chat-space-sm;
+
+      > label {
+        margin: 0;
+        font-size: @chat-font-label;
+        font-weight: 700;
+        color: var(--avocado-text-dark);
+      }
+    }
+
+  }
+
+  // Emoji de um lado, imagem do outro: um switch com dois lados nomeados num
+  // trilho só, e a metade acesa é a que está em uso. O controle é um botão; as
+  // metades são spans, então qualquer clique alterna.
+  &-iconKind {
+    display: flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border: 1px solid var(--avocado-border-subtle);
+    border-radius: @chat-radius-pill;
+    background: var(--body-bg);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    // O hover realça o lado que *não* está ativo, para onde o clique vai.
+    &:hover:not(:disabled) &-option:not(&-option--active) {
+      background: var(--chat-row-hover-bg);
+      color: var(--avocado-text-dark);
+    }
+
+    &-option {
+      .chat-flex-center();
+      width: 34px;
+      height: 24px;
+      border-radius: @chat-radius-pill;
+      font-size: 12px;
+      line-height: 1;
+      color: var(--avocado-muted-icon);
+      transition:
+        background var(--avocado-t-fast),
+        color var(--avocado-t-fast);
+
+      // Lado ativo: preenchido como o trilho de um switch, não só tingido.
+      &--active {
+        background: var(--button-primary-bg, var(--primary-color));
+        color: var(--button-primary-color, #fff);
+      }
+    }
+  }
+
+  // Preview, upload e remover quebram linha em vez de vazar: ficam na célula mais
+  // estreita da linha do nome.
+  .ChatChannelForm-imageRow {
+    flex-wrap: wrap;
+    margin-top: 0;
+  }
+
+  // Campo numérico revelado pela opção "Personalizado…", logo abaixo do select.
+  &-customLength {
+    margin-top: @chat-space-sm;
+  }
+
+  // Dois cards de visibilidade lado a lado.
+  &-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: @chat-space-sm;
+  }
+
+  &-choice {
+    display: flex;
+    flex-direction: column;
+    gap: @chat-space-xs;
+    margin: 0;
+    padding: @chat-space-sm @chat-space-md;
+    border: 1px solid var(--avocado-border-subtle);
+    border-radius: @chat-radius-sm;
+    background: var(--body-bg);
+    cursor: pointer;
+    font-weight: 400;
+    transition:
+      border-color var(--avocado-t-fast),
+      background var(--avocado-t-fast);
+
+    &:hover {
+      border-color: var(--avocado-border-chip);
+      background: var(--chat-row-hover-bg);
+    }
+
+    // O radio continua no DOM para teclado e leitor de tela; a borda do card mostra a
+    // seleção.
+    input[type='radio'] {
+      .chat-sr-only();
+    }
+
+    // :focus-visible não vale para input escondido; o anel vai no card quando o input
+    // dentro dele tem foco.
+    &:focus-within {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    &--selected {
+      border-color: var(--primary-color);
+      background: var(--chat-row-selected-bg);
+    }
+
+    &-title {
+      .chat-flex-row(@chat-space-sm);
+      font-size: @chat-font-label;
+      font-weight: 700;
+      color: var(--avocado-text-dark);
+
+      i {
+        width: 14px;
+        font-size: 12px;
+        text-align: center;
+        color: var(--avocado-muted-icon);
+      }
+    }
+
+    &--selected &-title i {
+      color: var(--primary-color);
+    }
+
+    &-help {
+      font-size: @chat-font-meta;
+      line-height: 1.4;
+      color: var(--avocado-muted-label);
+    }
+  }
+
+  // Linhas de switch separadas por linhas, não só espaço: cinco toggles com help
+  // viram um paredão de texto.
+  &-toggles {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-toggle {
+    padding: @chat-space-sm 0;
+
+    & + & {
+      border-top: 1px solid var(--avocado-border-soft);
+    }
+
+    &:first-child {
+      padding-top: 0;
+    }
+
+    &:last-child {
+      padding-bottom: 0;
+    }
+
+    .Checkbox {
+      margin: 0;
+      font-size: @chat-font-label;
+      font-weight: 600;
+      color: var(--avocado-text-dark);
+    }
+
+    .Checkbox--switch {
+      --left-pad: @chat-switch-indent;
+    }
+
+    // O trilho do switch desligado é `--control-bg`, quase a cor do card. Anel inset
+    // em vez de borda, para o trilho manter 50×28.
+    .Checkbox--switch.off .Checkbox-display {
+      box-shadow: inset 0 0 0 1px var(--avocado-border-chip);
+    }
+
+    // Alinha a frase ao label do switch, não ao switch.
+    .helpText {
+      margin-top: @chat-space-xs;
+      padding-left: @chat-switch-indent;
+    }
+  }
+
+  // Fechar e arquivar agem na hora, não esperam o save. Borda tracejada e sem
+  // preenchimento os separam dos cards que o envio aplica.
+  &-lifecycle {
+    border-style: dashed;
+    background: none;
+  }
+
+  &-lifecycleActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: @chat-space-sm;
+
+    // Seção sem preenchimento: o `.Button` padrão, cinza sobre cinza, parecia
+    // desabilitado.
+    > .Button {
+      .chat-action-btn();
+    }
+  }
+
+  // Destrutivo: linha própria e tratamento de texto discreto, igual ao do
+  // ChannelInfoModal.
+  &-lifecycleDanger {
+    margin-top: @chat-space-md;
+  }
+
+  &-lifecycleDanger &-deleteButton {
+    .chat-danger-btn();
+
+    margin-left: -@chat-space-sm;
+  }
+
+  &-footer {
+    .chat-flex-row(@chat-space-sm);
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin: 0;
+    padding: @chat-space-md @chat-space-xl;
+    border-top: 1px solid var(--avocado-border-soft);
+    background: var(--body-bg);
+  }
+
+  // Uma coluna no celular: duas de 150px numa viewport de 390px são mais estreitas
+  // que o texto.
+  @media @phone {
+    &-header {
+      padding: @chat-space-md @chat-space-lg;
+      padding-right: 52px;
+    }
+
+    &-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &-nameRow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    // `auto-fit` não desce abaixo do mínimo da trilha, e dois cards de 150px mais
+    // gap e padding vazavam 390px.
+    &-choices {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &-footer {
+      padding: @chat-space-md @chat-space-lg;
+      // Gruda no fundo do modal de altura cheia, para o envio ficar alcançável sem
+      // rolar até o fim.
+      position: sticky;
+      bottom: 0;
+      z-index: 1;
+    }
+  }
+}
+
+// ── Mensagem longa demais ──
+// Mostrado quando o envio é recusado pelo tamanho. O composer atrás ainda guarda o
+// texto.
+.ChatTooLongModal {
+  &-body.Modal-body {
+    padding: @chat-space-lg;
+  }
+
+  &-text {
+    margin: 0 0 @chat-space-lg;
+    font-size: @chat-font-label;
+    line-height: 1.5;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// ── Adicionar membros ──
+// Seletor de pessoas, aberto sobre o modal de info. Estilo próprio porque estas
+// linhas são multisseleção, e uma linha selecionável precisa parecer diferente de
+// uma só listada.
+.ChatAddMembers {
+  &-body.Modal-body {
+    padding: @chat-space-lg;
+  }
+
+  &-intro {
+    margin: 0 0 @chat-space-md;
+    font-size: @chat-font-label;
+    color: var(--avocado-muted-label);
+  }
+
+  // Campo de tokens: chips e input no mesmo box, para os escolhidos e o nome sendo
+  // digitado lerem como uma lista.
+  &-field {
+    .chat-flex-row(6px);
+    flex-wrap: wrap;
+    min-height: 44px;
+    padding: 4px @chat-space-md;
+    border: 1px solid var(--avocado-border-subtle);
+    border-radius: @chat-radius-md;
+    background: var(--avocado-surface-1);
+    cursor: text;
+    transition:
+      border-color var(--avocado-t-fast),
+      box-shadow var(--avocado-t-fast);
+
+    &:focus-within {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--chat-row-selected-bg);
+    }
+
+    &-icon {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--avocado-muted-icon);
+    }
+  }
+
+  &-input {
+    flex: 1 1 140px;
+    min-width: 0;
+    height: 32px;
+    border: 0;
+    background: none;
+    font-size: @chat-font-label;
+    color: var(--avocado-text-dark);
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &-chip {
+    .chat-flex-row(6px);
+    padding: 3px 8px 3px 3px;
+    border: 0;
+    border-radius: @chat-radius-pill;
+    background: var(--chat-row-selected-bg);
+    font-size: @chat-font-meta;
+    font-weight: 700;
+    color: var(--avocado-text-dark);
+    cursor: pointer;
+    transition: background var(--avocado-t-fast);
+
+    &:hover:not(:disabled) {
+      background: var(--avocado-border-chip);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 1px;
+    }
+
+    .Avatar {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    i {
+      font-size: 10px;
+      color: var(--avocado-muted-icon);
+    }
+  }
+
+  &-hint {
+    margin: @chat-space-md 0 0;
+    padding: @chat-space-md;
+    text-align: center;
+    font-size: @chat-font-label;
+    color: var(--avocado-muted-label);
+  }
+
+  &-heading {
+    padding: @chat-space-sm @chat-space-sm @chat-space-xs;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--avocado-muted-label);
+  }
+
+  // Limitado para o diálogo não passar da viewport; o campo acima continua visível
+  // enquanto isto rola.
+  &-results {
+    .chat-scroll-y();
+    max-height: 320px;
+    margin-top: @chat-space-md;
+
+    &--empty {
+      padding: @chat-space-lg;
+      text-align: center;
+    }
+  }
+
+  &-result {
+    .chat-flex-row(@chat-space-sm);
+    width: 100%;
+    padding: 6px @chat-space-sm;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--avocado-text-dark);
+    transition: background var(--avocado-t-fast);
+
+    &:hover:not(:disabled),
+    &--highlighted:not(:disabled) {
+      background: var(--chat-row-hover-bg);
+    }
+
+    &--selected:not(:disabled) {
+      background: var(--chat-row-selected-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
+    }
+
+    &--taken {
+      cursor: default;
+      color: var(--avocado-muted-label);
+    }
+
+    &-avatar {
+      position: relative;
+      flex-shrink: 0;
+
+      .Avatar {
+        width: 30px;
+        height: 30px;
+      }
+
+      &--online .Avatar {
+        .chat-online-ring(2px);
+      }
+    }
+
+    &-text {
+      .chat-flex-row(6px);
+      flex: 1;
+      min-width: 0;
+    }
+
+    &-name {
+      .chat-truncate();
+      font-size: @chat-font-label;
+      font-weight: 600;
+    }
+
+    &-handle {
+      .chat-truncate();
+      font-size: @chat-font-meta;
+      color: var(--avocado-muted-label);
+    }
+
+    &-status {
+      flex-shrink: 0;
+      padding: 1px 8px;
+      border-radius: @chat-radius-pill;
+      background: var(--control-bg);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--control-color);
+    }
+
+    &-mark {
+      .chat-icon-circle(24px; var(--chat-row-hover-bg));
+      flex-shrink: 0;
+      font-size: 10px;
+      color: var(--avocado-muted-icon);
+    }
+
+    &--selected &-mark {
+      background: var(--primary-color);
+      color: var(--body-bg);
+    }
+  }
+
+  &-footer {
+    .chat-flex-row(@chat-space-sm);
+    justify-content: flex-end;
+
+    &-count {
+      flex: 1;
+      text-align: left;
+      font-size: @chat-font-meta;
+      color: var(--avocado-muted-label);
+    }
+  }
+}
+
+// ── Ajustes do drawer ──
+// No drawer sidebar e canal são telas alternativas, uma montada por vez. Os 280px
+// fixos do sidebar são para a tela cheia; num drawer de 420px sobrariam ~140px
+// vazios à direita.
+.ChatDrawer-body {
+  > .ChatSidebar {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    border-right: 0;
+  }
+
+  > .ChatChannel {
+    min-width: 0;
+  }
+
+  // Teto menor para a textarea do que na tela cheia: 220px de composer num drawer
+  // de 560px deixam duas mensagens visíveis. O composer continua rolando por dentro.
+  // Não vale abaixo do breakpoint mobile, onde o drawer tem altura cheia.
+  @media (min-width: (@chat-mobile-breakpoint + 1)) {
+    .ChatComposer-input {
+      max-height: 120px;
+      // O drawer também tem teto (`100vh - 80px`), então numa janela baixa este cede.
+      max-height: ~"min(120px, 22vh)";
+    }
+  }
+}
+
+// ── Emoji ──
+// O emoji do chip de reação precisa de line-height próprio: o glifo é mais alto que
+// os dígitos e esticaria o chip.
+.ChatReactions-emoji {
+  font-size: 14px;
+  line-height: 1;
+}
+
+// Emoji customizado do Flamoji é imagem, sem ligação com o tamanho da fonte, e
+// renderizaria no tamanho do arquivo. Em `px`, não no `em` do `span.flamoji img`
+// do Flamoji: aquilo é para texto corrido, e chip e autocomplete têm altura fixa.
+.ChatReactions-flamoji {
+  display: block;
+  width: auto;
+  height: 16px;
+  max-width: 48px;
+  object-fit: contain;
+}
+
+.ChatAutocomplete-flamoji {
+  display: block;
+  width: auto;
+  height: 20px;
+  max-width: 60px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+// No slot de ícone a imagem é a marca inteira e preenche o círculo: o slot tem
+// 38px no Browse e 20px no sidebar. `contain` evita esticar sprite não quadrado.
+.ChatChannelIcon-flamoji {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+// Slot do ícone do canal: círculo de 38px no Browse, coluna de 20-26px no
+// sidebar, glifo ao lado do nome no header. Cortar aqui impede que um valor ruim
+// quebre o layout. Cada entrada é uma classe do próprio elemento do ícone: um
+// emoji é text node e seletores posicionais pegariam o nome.
+.ChatBrowseCard-icon,
+.ChatChannelRow-icon,
+.ChatChannel-icon {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  line-height: 1;
+}
+
+// ── Forma de avatares do slot ──
+// Conversa direta é marcada por quem está nela (utils/channelIcon.tsx põe esta
+// classe no slot). Desfaz o que as regras acima definem para glifo e precisa vir
+// depois delas: as classes do slot também são de classe única, então vence pela
+// ordem. Classe simples, e não composta em cada slot, para uma quinta superfície
+// não ficar de fora.
+//
+// `width: auto` porque a coluna fixa de 20px cortaria os rostos; `overflow: visible`
+// porque a margem negativa é o que forma a pilha.
+.ChatChannelIcon--avatars {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: auto;
+  min-width: 0;
+  overflow: visible;
+  vertical-align: middle;
+  // O mixin de círculo do Browse pinta fundo e borda para glifo; atrás de rostos
+  // vira um anel cinza.
+  background: none;
+  border: 0;
+  padding: 0;
+
+  // Um tamanho para todo slot: header e título do modal têm fontes muito
+  // diferentes, e um avatar em em iria junto. É o tamanho que o sidebar já usava.
+  .Avatar {
+    width: @chat-avatar-size-compact;
+    height: @chat-avatar-size-compact;
+    // Para ler como pilha, não como dois círculos encostados.
+    border: 2px solid var(--body-bg);
+
+    & + .Avatar {
+      margin-left: -10px;
+    }
+  }
+}
+
+// O único slot que mantém a largura: no Browse os cards estão em grade, e uma
+// pilha com tamanho próprio desalinharia o nome. Dois avatares sobrepostos dão
+// 38px e cabem no círculo de 40px.
+.ChatBrowseCard-icon.ChatChannelIcon--avatars {
+  width: 40px;
+}
+
+// No título do modal a marca não está numa linha flex e não tem gap. Um glifo tem
+// o próprio espaçamento lateral; um círculo de 24px encostaria no nome.
+.ChatChannelInfo-icon.ChatChannelIcon--avatars {
+  margin-right: @chat-space-sm;
+}
+
+.EmojiPicker {
+  position: relative;
+
+  &-control {
+    .chat-flex-row(8px);
+  }
+
+  &-preview {
+    .chat-icon-circle(36px);
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  &-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-clear {
+    flex-shrink: 0;
+  }
+
+  &-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: var(--avocado-z-dropdown);
+    margin-top: 4px;
+    max-height: 220px;
+    padding: 6px;
+    .chat-scroll-y();
+    .chat-surface(@chat-radius-md);
+    box-shadow: var(--shadow-medium);
+  }
+
+  // auto-fill em vez de contagem fixa, para a grade se adaptar à largura do modal.
+  &-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+    gap: 2px;
+  }
+
+  &-option {
+    .chat-flex-center();
+    height: 34px;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    cursor: pointer;
+    font-size: 19px;
+    line-height: 1;
+    transition: background var(--avocado-t-fast);
+
+    &:hover,
+    &--active {
+      background: var(--chat-row-hover-bg);
+    }
+  }
+
+  &-empty {
+    padding: 10px;
+    text-align: center;
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// ── Atividade no drawer recolhido ──
+// Recolhido, o drawer é uma barra de 48px sem stream, então a atividade aparece no
+// header: menções ganham contagem.
+.ChatDrawer {
+  // Contador de não lidas no header recolhido. Neutro por padrão, vermelho só
+  // quando as mensagens são para o leitor.
+  &-badge {
+    flex-shrink: 0;
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+    color: var(--avocado-muted-label);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+
+    &--mention {
+      background: var(--chat-unread-line);
+      color: #fff;
+    }
+  }
+}
+
+// Linha de sistema (entrou / saiu / canal fechado) é narração: centralizada,
+// discreta e sem a coluna do avatar.
+.ChatMessage--system {
+  .ChatMessage-body {
+    text-align: center;
+  }
+
+  .ChatMessage-tombstone {
+    font-style: normal;
+    font-size: @chat-font-meta;
+  }
+
+  &:hover {
+    background: none;
+  }
+}
+
+// ── Card de anúncio ──
+// Post do bot que aponta para algum lugar (hoje, discussão nova da categoria
+// vinculada). Estilizado no bloco de conteúdo: continua sendo uma mensagem comum,
+// que aceita resposta, reação e agrupamento.
+//
+// A imagem da discussão anunciada, do tamanho de um favicon e ao lado do texto,
+// para não pesar mais que o título.
+.ChatMessage-announcementIcon {
+  float: left;
+  width: 34px;
+  height: 34px;
+  margin: 2px @chat-space-md @chat-space-xs 0;
+  border-radius: @chat-radius-sm;
+  object-fit: contain;
+  // Fica sobre um card tingido, seja qual for o fundo da imagem.
+  background: var(--avocado-surface-1);
+}
+
+.ChatMessage--announcement {
+  .ChatMessage-content {
+    padding-left: 12px;
+    border-left: 3px solid var(--primary-color);
+  }
+
+  // O título é o primeiro parágrafo do corpo (um link em negrito), endereçado pela
+  // estrutura porque o corpo vem do mesmo formatter de Markdown, sem markup nosso.
+  .ChatMessage-content > p:first-child {
+    margin: 0;
+    font-size: @chat-font-label;
+    font-weight: 800;
+    line-height: 1.3;
+
+    a {
+      color: var(--link-color, var(--primary-color));
+    }
+  }
+
+  // O trecho abaixo.
+  .ChatMessage-content > p:not(:first-child) {
+    margin: 4px 0 0;
+    font-size: @chat-font-meta;
+    line-height: 1.45;
+    color: var(--avocado-text-dark);
+
+    // Duas linhas bastam para julgar o tópico; mais que isso compete com a conversa.
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// ── Bot do chat ──
+// Mensagem do bot é uma mensagem comum; aqui só ficam as duas peças de identidade
+// que um registro de usuário daria.
+
+// No lugar da foto quando não há uma, como o core desenha usuário sem avatar:
+// inicial sobre disco colorido.
+.Avatar--bot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  font-weight: 800;
+  color: #fff;
+  background: var(--primary-color);
+}
+
+// Pequeno, em maiúsculas e ao lado do nome, como um selo de staff: parte da
+// identidade.
+.ChatMessage-botTag {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--body-bg);
+  background: var(--avocado-muted-label);
+}
+
+// Marcas de estado: cadeado do canal privado e sino cortado do silenciado. No
+// sidebar e no Browse, onde o canal aparece. O header do canal não leva nenhuma:
+// lá dentro não é novidade, e um glifo entre controles pareceria botão. Uma regra
+// para as duas, para nenhuma parecer mais importante.
+.ChatChannelRow-lock,
+.ChatChannelRow-mute,
+.ChatBrowseCard-lock {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--avocado-muted-icon);
+}
+
+// No drawer não há largura para segunda coluna, então um painel sobreposto cobre
+// a conversa, como a thread no celular. PinnedPanel renderiza
+// `ChatThreadPanel ChatPinnedPanel`, então a classe compartilhada cobre os dois.
+.ChatDrawer-body {
+  position: relative;
+
+  // Busca embutida e lista de threads do canal entram junto: são o terceiro e o
+  // quarto painéis desse slot, com o mesmo header. Sem isto a lista de threads
+  // ocupava uma coluna e dividia o drawer.
+  .ChatThreadPanel,
+  .ChatSearch--embedded,
+  .ChatThreadsList--embedded {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    border-left: 0;
+    z-index: var(--avocado-z-sidebar);
+    background: var(--body-bg);
+  }
+}
+
+// Busca como painel sobre a conversa. Aqui o painel ocupa a altura toda do drawer
+// e só os resultados rolam, senão a barra se afasta do campo.
+.ChatSearch--embedded {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  .ChatSearch-results {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+// Nome de usuário é link para o perfil, mas dentro da mensagem mantém peso e cor
+// do autor e só sublinha no hover.
+.ChatUserLink {
+  color: inherit;
+
+  &:hover,
+  &:focus {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
+// ── Imagem do canal ──
+// Imagem enviada no lugar do emoji, no tamanho dele para sidebar, Browse e header
+// manterem o alinhamento. Só utils/channelIcon.tsx a renderiza.
+.ChatChannelIcon-image {
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 4px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+// ── Imagem do canal no formulário ──
+.ChatChannelForm-imageRow {
+  .chat-flex-row(10px);
+  margin-top: 6px;
+
+  label.Button {
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
+.ChatChannelForm-imagePreview {
+  .chat-flex-center();
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: @chat-radius-sm;
+  overflow: hidden;
+  background: var(--avocado-surface-1);
+  color: var(--avocado-muted-icon);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// ── Favoritos ──
+// Mensagens salvas de todos os canais. As linhas são resumos: a ação útil é "me
+// leve até ela", então a linha é um link com o toggle de favorito ao lado.
+.ChatBookmarks {
+  .chat-scroll-y();
+  flex: 1;
+  min-height: 0;
+  padding: 12px 16px;
+
+  &-row {
+    .chat-flex-row(10px);
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--avocado-border-soft);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    .Avatar {
+      width: @chat-avatar-size-compact;
+      height: @chat-avatar-size-compact;
+      flex-shrink: 0;
+    }
+  }
+
+  &-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+  }
+
+  &-meta {
+    .chat-flex-row(6px);
+    flex-wrap: wrap;
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+
+  &-author {
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  // O canal diz de onde veio a mensagem salva; aparece como label, não como mais
+  // metadado cinza.
+  &-channel {
+    padding: 1px 6px;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+  }
+
+  &-excerpt {
+    margin-top: 3px;
+    font-size: @chat-font-label;
+    line-height: 1.45;
+    color: var(--avocado-text-dark);
+    word-break: break-word;
+  }
+
+  // Preenchido: toda linha aqui é favorita, e um contorno pareceria "não salvo".
+  &-remove {
+    flex-shrink: 0;
+    color: var(--primary-color);
+  }
+}
+
+// ── Fila de moderação ──
+// Cards em vez de linhas: uma denúncia tem três partes (quem denunciou, o que disse
+// e a mensagem) que o moderador precisa ler, e o box impede que se misturem com a
+// próxima.
+.ChatFlags {
+  .chat-scroll-y();
+  flex: 1;
+  min-height: 0;
+  padding: @chat-space-md @chat-space-lg;
+
+  &-header {
+    .chat-flex-row(@chat-space-sm);
+    justify-content: space-between;
+    margin-bottom: @chat-space-md;
+  }
+
+  &-title {
+    margin: 0;
+    font-size: @chat-font-message;
+    font-weight: 800;
+    color: var(--avocado-text-dark);
+  }
+
+  &-toggle--active {
+    color: var(--primary-color);
+  }
+
+  &-row {
+    .chat-surface(@chat-radius-md);
+    padding: @chat-space-md;
+    margin-bottom: @chat-space-md;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    // Denúncias resolvidas continuam legíveis sem competir com as abertas; só
+    // aparecem quando pedidas.
+    &--resolved {
+      opacity: 0.6;
+    }
+  }
+
+  &-reporter {
+    .chat-flex-row(@chat-space-sm);
+
+    .Avatar {
+      width: @chat-avatar-size-compact;
+      height: @chat-avatar-size-compact;
+      flex-shrink: 0;
+    }
+
+    &-meta {
+      .chat-flex-row(@chat-space-xs);
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    &-name {
+      font-weight: 800;
+      color: var(--avocado-text-dark);
+    }
+  }
+
+  &-time {
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+
+  // Motivo como pílula, no fim da linha: é por ele que o moderador faz a triagem.
+  &-reason {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 2px @chat-space-sm;
+    border-radius: @chat-radius-pill;
+    background: var(--avocado-surface-1);
+    font-size: @chat-font-meta;
+    font-weight: 700;
+    color: var(--avocado-text-dark);
+  }
+
+  // Os dois que descrevem conduta, não conteúdo, destacados na coluna de pílulas.
+  &-reason--harassment,
+  &-reason--inappropriate {
+    background: var(--alert-error-bg, #d83e3e);
+    color: var(--alert-error-color, #fff);
+  }
+
+  &-detail {
+    margin-top: @chat-space-sm;
+    padding-left: @chat-space-md;
+    border-left: 3px solid var(--avocado-border-soft);
+    font-size: @chat-font-label;
+    line-height: 1.5;
+    color: var(--avocado-text-dark);
+    word-break: break-word;
+    // O denunciante digitou isto numa textarea; as quebras de linha fazem parte.
+    white-space: pre-wrap;
+  }
+
+  &-target {
+    margin-top: @chat-space-md;
+    padding: @chat-space-sm @chat-space-md;
+    border-radius: @chat-radius-sm;
+    background: var(--avocado-surface-1);
+
+    &-meta {
+      .chat-flex-row(@chat-space-xs);
+      flex-wrap: wrap;
+      font-size: @chat-font-meta;
+      color: var(--avocado-muted-label);
+
+      .Avatar {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+    }
+
+    &-author {
+      font-weight: 800;
+      color: var(--avocado-text-dark);
+    }
+
+    &-channel {
+      padding: 1px 6px;
+      border-radius: @chat-radius-pill;
+      background: var(--avocado-surface-2, var(--avocado-surface-1));
+    }
+
+    &-excerpt {
+      margin-top: @chat-space-xs;
+      font-size: @chat-font-label;
+      line-height: 1.45;
+      color: var(--avocado-text-dark);
+      word-break: break-word;
+    }
+  }
+
+  &-gone {
+    margin-top: @chat-space-md;
+    font-size: @chat-font-label;
+    font-style: italic;
+    color: var(--avocado-muted-label);
+  }
+
+  &-actions {
+    .chat-flex-row(@chat-space-sm);
+    flex-wrap: wrap;
+    margin-top: @chat-space-md;
+  }
+
+  &-delete {
+    color: var(--alert-error-bg, #d83e3e);
+  }
+
+  &-resolvedBy {
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// ── Diálogo de denúncia ──
+.ChatFlagModal {
+  &-target {
+    padding: @chat-space-sm @chat-space-md;
+    margin-bottom: @chat-space-lg;
+    border-radius: @chat-radius-sm;
+    background: var(--avocado-surface-1);
+
+    &-author {
+      font-size: @chat-font-meta;
+      font-weight: 800;
+      color: var(--avocado-muted-label);
+    }
+
+    &-excerpt {
+      margin-top: @chat-space-xs;
+      font-size: @chat-font-label;
+      line-height: 1.45;
+      color: var(--avocado-text-dark);
+      word-break: break-word;
+    }
+  }
+
+  // Botões em vez de select: cinco opções cabem de uma vez, e ver a lista inteira
+  // evita escolher "outro" por padrão.
+  &-reasons {
+    .chat-flex-row(@chat-space-sm);
+    flex-wrap: wrap;
+  }
+
+  &-reason {
+    .chat-pill-btn();
+    border: 1px solid var(--avocado-border-soft);
+    background: none;
+    color: var(--avocado-text-dark);
+
+    &:hover:not(:disabled) {
+      background: var(--chat-row-hover-bg);
+    }
+
+    &--active {
+      border-color: var(--primary-color);
+      background: var(--chat-row-selected-bg);
+      color: var(--primary-color);
+      font-weight: 800;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}
+
+// ── ramon/stickers ──
+// O conteúdo do chat passa pelo formatter compartilhado do core, onde o stickers
+// registra suas substituições, e o MutationObserver dele no body hidrata os
+// animados. Falta só o tamanho: um sticker dimensionado para post enche a bolha,
+// então o teto é de umas quatro linhas de texto e encolhe com o painel.
+.ChatMessage-content {
+  .Sticker {
+    display: inline-block;
+    // Escapado: o Less trata `min()` como função própria e recusa unidades mistas, o
+    // que derruba a compilação inteira. O til passa a string direto para o CSS.
+    max-width: ~"min(220px, 60%)";
+    vertical-align: middle;
+
+    img.sticker,
+    canvas,
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  // Mensagem que é só um sticker lê como imagem e ganha a largura toda da bolha.
+  .Sticker:only-child {
+    max-width: ~"min(260px, 80%)";
+  }
+}
+
+// Preview do composer e faixa de fixadas têm uma linha; o sticker se encaixa nela.
+.ChatComposer-context-preview,
+.ChatChannel-pinnedBar {
+  .Sticker {
+    max-width: 20px;
+
+    img.sticker {
+      width: 100%;
+      height: auto;
+    }
+  }
+}
+
+// ── Visualizador de imagem ──
+// Abre ao clicar numa imagem do stream. Não é Modal do Flarum: o gerenciador
+// centraliza um diálogo branco de largura limitada, e aqui a imagem deve ser o
+// maior possível sobre fundo escuro.
+.ChatLightbox {
+  position: fixed;
+  inset: 0;
+  z-index: var(--avocado-z-modal, 2000);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px @chat-space-lg @chat-space-lg;
+
+  background: rgba(0, 0, 0, 0.85);
+  // O overlay recebe o foco para o Escape funcionar sem clicar antes.
+  outline: 0;
+
+  &-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: @chat-radius-sm;
+    // Imagem escura sobre fundo escuro precisa de borda para não parecer um buraco.
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+
+  &-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: @chat-space-md;
+    padding: @chat-space-md @chat-space-lg;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  &-meta {
+    display: flex;
+    align-items: baseline;
+    gap: @chat-space-sm;
+    min-width: 0;
+    font-size: @chat-font-label;
+  }
+
+  &-author {
+    font-weight: 800;
+    color: #fff;
+  }
+
+  &-time,
+  &-name,
+  &-count {
+    .chat-truncate();
+    font-size: @chat-font-meta;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  &-actions {
+    display: flex;
+    align-items: center;
+    gap: @chat-space-sm;
+    margin-left: auto;
+    flex-shrink: 0;
+
+    .Button {
+      color: rgba(255, 255, 255, 0.85);
+
+      &:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+  }
+
+  // Sobre a imagem, não ao lado, para uma imagem larga usar a largura toda.
+  &-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(0, 0, 0, 0.4);
+
+    &:hover {
+      color: #fff;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    &--prev {
+      left: @chat-space-md;
+    }
+
+    &--next {
+      right: @chat-space-md;
+    }
+  }
+}
+
+// A miniatura é um botão e herda borda e padding do navegador.
+.ChatUploads-imageButton {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+// ── ramon/verified ──
+// Selo ao lado do nome do autor. A extensão traz o próprio estilo; aqui só o
+// encaixe no chat, que no drawer é uma faixa de ~340px.
+.ChatMessage-meta .VerifiedBadge--chat {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+
+  // A extensão dá `margin-left: 5px`, certo num header de post. Esta linha flex já
+  // espaça os filhos em 8px, então zera e puxa dos dois lados (conta na regra do
+  // anchor abaixo). Idêntica a ela de propósito: as duas cobrem as duas árvores que
+  // o VerifiedBadge renderiza conforme uma setting.
+  margin: 0 -@chat-space-xs;
+
+  svg,
+  img {
+    width: @chat-verified-badge-size;
+    height: @chat-verified-badge-size;
+    display: block;
+  }
+}
+
+// Mesma neutralização para o elemento que o selo é numa instalação padrão. Com o
+// tooltip ligado (o padrão, a setting é lida como `!== false`) o VerifiedBadge
+// devolve `<VerifiedPopover>` e descarta o className, então `VerifiedBadge--chat`
+// não chega ao DOM e sobra um `.VerifiedPopover-anchor` com `margin-left: 5px`.
+// Corrigido aqui porque só esta linha flex é nossa.
+//
+// Puxa 4px de cada lado do gap de 8px: o selo fica equidistante do nome e do
+// horário.
+.ChatMessage-meta .VerifiedPopover-anchor {
+  flex-shrink: 0;
+  margin: 0 -@chat-space-xs;
+
+  // Mesmo box do selo simples acima. O componente define `--verified-size` inline
+  // a partir de uma setting; sem isto o tamanho mudaria com o tooltip e a seta não
+  // teria largura confiável. `!important` porque estilo inline vence a folha.
+  .VerifiedBadge {
+    width: @chat-verified-badge-size !important;
+    height: @chat-verified-badge-size !important;
+  }
+}
+
+// O popover tem 320px e centraliza no selo, certo num post e errado aqui: o drawer
+// mal é mais largo, e centralizar num selo perto da borda esquerda joga metade
+// para fora. Limitado a `.ChatMessage`, nada muda nos posts.
+.ChatMessage .VerifiedPopover {
+  width: 220px;
+  // Escapado: o Less tentaria avaliar `min()` e recusaria as unidades mistas,
+  // derrubando a folha toda.
+  max-width: ~"min(220px, calc(100vw - 32px))";
+  font-size: @chat-font-meta;
+
+  // Alinhado perto do selo, não centralizado, para crescer para dentro do painel.
+  // A seta não pode ficar a menos de 16px da borda sem encostar no canto
+  // arredondado, então o painel é deslocado pela diferença entre esse recuo e o meio
+  // do selo.
+  left: (@chat-verified-badge-size / 2) - @chat-verified-arrow-inset;
+  transform: none;
+
+  // A animação de entrada da extensão fixa `translateX(-50%)`, que brigaria com o
+  // reset acima nos primeiros frames. Só opacity tem o mesmo efeito sem mover.
+  animation: none;
+}
+
+// No chat, só a declaração. A metade de baixo do popover é um cartão de
+// identidade que repete o que já está à esquerda na linha; o que vale manter é o
+// que a linha não diz: que a conta é verificada e onde ler o que isso significa.
+.ChatMessage .VerifiedPopover-body {
+  display: none;
+}
+
+.ChatMessage .VerifiedPopover-header {
+  padding: @chat-space-md;
+  // Sem divisor, já que não há nada abaixo.
+  border-bottom: 0;
+}
+
+// Sobre o selo. O recuo é restrição da seta (ver a variável) e o painel se
+// desloca para acomodá-lo; alinhar a seta à metade do selo a jogava no raio de 8px
+// do canto. `translateX(-50%)` volta da regra base da extensão: sem ele `left`
+// seria a borda esquerda da seta, não o centro.
+.ChatMessage .VerifiedPopover-arrow {
+  left: @chat-verified-arrow-inset;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+// ── Seletor de stickers ──
+// Painel próprio sobre os dados do ramon/stickers (o motivo está em
+// components/StickerPicker.tsx).
+.ChatStickerPicker-wrapper {
+  // Montado no <body> e aberto pelo composer do drawer: precisa passar do drawer
+  // (camada do composer + 5) e do composer trazido para frente (+ 6), a camada que o
+  // core usa para menus sobre o composer.
+  z-index: ~"calc(var(--zindex-composer, 1020) + 10)";
+}
+
+.ChatStickerPicker {
+  width: 280px;
+  max-width: ~"min(280px, calc(100vw - 24px))";
+  padding: @chat-space-sm;
+  border: 1px solid var(--avocado-border-subtle);
+  border-radius: @chat-radius-md;
+  background: var(--body-bg);
+  box-shadow: var(--shadow-lifted);
+
+  &-search {
+    width: 100%;
+    margin-bottom: @chat-space-sm;
+  }
+
+  &-grid {
+    .chat-scroll-y();
+    // Só vertical: o mixin deixa o eixo horizontal no padrão, e uma grade `auto-fill`
+    // com largura mínima arredonda para além do painel e ganha uma segunda scrollbar.
+    overflow-x: hidden;
+    display: grid;
+
+    // Preenche a largura com o que couber, sem coluna sobrando num drawer estreito.
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: @chat-space-xs;
+    max-height: 240px;
+  }
+
+  &-item {
+    .chat-flex-center();
+    // Itens de grade têm `min-width: auto` por padrão e não encolhem abaixo do
+    // conteúdo: a outra metade do overflow.
+    min-width: 0;
+    aspect-ratio: 1;
+    padding: @chat-space-xs;
+    border: 0;
+    border-radius: @chat-radius-sm;
+    background: none;
+    cursor: pointer;
+    transition: background var(--avocado-t-fast);
+
+    &:hover {
+      background: var(--chat-row-hover-bg);
+    }
+
+    // O item contém o markup `.Sticker` da extensão, preenchido com canvas ou <img>
+    // conforme o formato. Dimensionado aqui para animado e estático ocuparem a mesma
+    // célula.
+    .Sticker {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    img,
+    canvas,
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  &-loading,
+  &-empty {
+    padding: @chat-space-lg;
+    text-align: center;
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// ── Respostas ao convite na notificação ──
+// No trecho da notificação "X convidou você", no sino e no toast realtime. Botões e
+// não links porque a linha já é um link, e responder não pode segui-lo.
+.ChatInviteActions {
+  .chat-flex-row(@chat-space-xs);
+  flex-wrap: wrap;
+  margin-top: @chat-space-xs;
+
+  .Button--compact {
+    padding: 2px 10px;
+    font-size: @chat-font-meta;
+    line-height: 20px;
+  }
+
+  &-hint {
+    .chat-flex-row(4px);
+    margin-right: @chat-space-xs;
+    font-size: @chat-font-meta;
+    color: var(--avocado-muted-label);
+
+    i {
+      font-size: 10px;
+    }
+  }
+}
+
+// Composer, bubble de resposta do tema e seu card flutuante só passam à frente
+// do drawer enquanto em uso (foco ou clique dentro); utils/stacking.ts alterna a
+// classe no <html>.
+html.ChatComposerFront {
+  // `.App-composer` é a camada fixa que de fato empilha o composer.
+  .App-composer,
+  #composer,
+  #composer .Composer,
+  #avocado-reply-dock,
+  .AvocadoComposerDock {
+    z-index: ~"calc(var(--zindex-composer, 1020) + 6)";
+  }
+}

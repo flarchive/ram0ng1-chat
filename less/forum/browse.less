@@ -1,0 +1,751 @@
+// ── Browse de canais ──
+// Barra de filtros e busca sobre uma grade de cards. Paleta própria, que o resto
+// do chat não lê, em três camadas que nunca se confundem: página, card e controle.
+//
+// Local em vez de `--avocado-muted-label` e `--control-bg`: o primeiro dá 2.6:1 no
+// branco (abaixo do AA para texto) e o segundo é o mesmo cinza dos cards.
+.ChatBrowse {
+  --browse-text:                 var(--avocado-text-dark);
+  --browse-muted:                #5c5c66;
+  --browse-faint:                #6e6e78;
+  --browse-accent:               var(--primary-color);
+  --browse-accent-soft:          #fbeaea;
+  --browse-on-accent:            var(--button-primary-color, #fff);
+  --browse-accent-bg:            var(--button-primary-bg, var(--primary-color));
+  --browse-accent-bg-hover:      var(--button-primary-bg-hover, var(--primary-color));
+
+  --browse-card-bg:              var(--body-bg);
+  --browse-card-border:          #e1e1e8;
+  --browse-card-border-hover:    #c4c4cf;
+  --browse-card-shadow:          0 1px 2px rgba(17, 17, 26, 0.04), 0 1px 8px rgba(17, 17, 26, 0.04);
+  --browse-card-shadow-hover:    0 2px 4px rgba(17, 17, 26, 0.05), 0 10px 28px rgba(17, 17, 26, 0.10);
+  --browse-frozen-bg:            #f7f7f9;
+
+  --browse-control-bg:           var(--body-bg);
+  --browse-control-border:       #d2d2db;
+  --browse-control-hover-bg:     #f0f0f4;
+  --browse-control-hover-border: #a3a3af;
+  --browse-control-active-bg:    #e4e4ea;
+
+  --browse-track-bg:             #f0f0f4;
+  --browse-track-border:         #e4e4ea;
+  --browse-tab-hover-bg:         #e1e1e8;
+
+  --browse-chip-bg:              #f0f0f4;
+  --browse-chip-text:            #4f4f59;
+
+  --browse-joined-bg:            #e5f4ea;
+  --browse-joined-text:          #17663a;
+  --browse-invited-bg:           #fdf1dc;
+  --browse-invited-text:         #87480a;
+  --browse-inspecting-bg:        #ecedfd;
+  --browse-inspecting-text:      #3c3fa6;
+  --browse-frozen-chip-bg:       #e7e7ec;
+  --browse-frozen-chip-text:     #45454f;
+
+  --browse-danger:               var(--error-color, #d83e3e);
+  --browse-danger-bg:            #fdeceb;
+
+  // Dois anéis: o interno, na cor da página, mantém o externo legível sobre um
+  // botão na cor de destaque.
+  --browse-focus-ring:           0 0 0 2px var(--body-bg), 0 0 0 4px var(--browse-accent);
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    --browse-accent-soft:        color-mix(in srgb, var(--primary-color) 9%, var(--body-bg));
+  }
+
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: @chat-space-lg 24px 56px;
+  color: var(--browse-text);
+
+  @media (max-width: @chat-mobile-breakpoint) {
+    padding: @chat-space-md 16px 40px;
+  }
+
+  // Navegação, não par da ação principal: pílula discreta acima do título.
+  &-back {
+    .chat-flex-row(@chat-space-sm);
+    margin: 0 0 @chat-space-md -10px;
+    padding: 6px 12px 6px 10px;
+    border: 1px solid transparent;
+    border-radius: @chat-radius-pill;
+    background: none;
+    font-size: @chat-font-label;
+    font-weight: 700;
+    color: var(--browse-muted);
+    cursor: pointer;
+
+    i {
+      font-size: 11px;
+    }
+
+    &:hover {
+      border-color: var(--browse-control-border);
+      background: var(--browse-control-hover-bg);
+      color: var(--browse-text);
+    }
+
+    &:active {
+      background: var(--browse-control-active-bg);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--browse-focus-ring);
+    }
+  }
+
+  // Quebra linha em vez de espremer o título contra o botão de criar.
+  &-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: @chat-space-md;
+    margin-bottom: @chat-space-lg;
+
+    .Button--primary {
+      flex-shrink: 0;
+      border-radius: @chat-radius-pill;
+      padding: 9px 18px;
+      font-weight: 700;
+      background: var(--browse-accent-bg);
+      color: var(--browse-on-accent);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+
+      &:hover {
+        background: var(--browse-accent-bg-hover);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--browse-focus-ring);
+      }
+    }
+  }
+
+  &-heading {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-title {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    color: var(--browse-text);
+
+    @media (max-width: @chat-mobile-breakpoint) {
+      font-size: 24px;
+    }
+  }
+
+  &-subtitle {
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--browse-muted);
+  }
+
+  // Filtros e busca dividem a linha no desktop e empilham no celular.
+  &-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: @chat-space-lg;
+    padding-bottom: @chat-space-lg;
+    border-bottom: 1px solid var(--browse-card-border);
+  }
+
+  // Controle segmentado: trilho, hover e opção ativa têm três cores distintas.
+  &-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 3px;
+    border: 1px solid var(--browse-track-border);
+    border-radius: @chat-radius-pill;
+    background: var(--browse-track-bg);
+
+    @media (max-width: @chat-mobile-breakpoint) {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  }
+
+  &-filter {
+    .chat-pill-btn(32px; 14px);
+    flex-shrink: 0;
+    background: transparent;
+    color: var(--browse-muted);
+    white-space: nowrap;
+
+    // Cinco opções num trilho de 358px no celular: pílulas mais justas, para a
+    // maioria caber.
+    @media (max-width: @chat-mobile-breakpoint) {
+      padding: 0 11px;
+    }
+
+    &:hover {
+      background: var(--browse-tab-hover-bg);
+      color: var(--browse-text);
+    }
+
+    &:active {
+      background: var(--browse-control-active-bg);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--browse-accent);
+    }
+
+    // `--header-color` é igual a `--primary-color` num header simples, então o label
+    // usa a cor de texto do botão primário.
+    &--active,
+    &--active:hover,
+    &--active:active {
+      background: var(--browse-accent-bg);
+      color: var(--browse-on-accent);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+    }
+
+    &--active:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--browse-on-accent), 0 0 0 2px var(--browse-accent);
+    }
+  }
+
+  &-search {
+    .chat-flex-row(@chat-space-sm);
+    flex: 0 1 300px;
+    min-width: 200px;
+    height: 40px;
+    padding: 0 6px 0 14px;
+    border: 1px solid var(--browse-control-border);
+    border-radius: @chat-radius-pill;
+    background: var(--browse-control-bg);
+
+    @media (max-width: @chat-mobile-breakpoint) {
+      flex: 1 1 100%;
+    }
+
+    &:hover {
+      border-color: var(--browse-control-hover-border);
+    }
+
+    // O input não tem borda própria; o anel vai no campo inteiro.
+    &:focus-within {
+      border-color: var(--browse-accent);
+      box-shadow: 0 0 0 3px var(--browse-accent-soft);
+    }
+
+    &-icon {
+      flex-shrink: 0;
+      font-size: 13px;
+      color: var(--browse-faint);
+    }
+
+    &:focus-within &-icon {
+      color: var(--browse-accent);
+    }
+
+    &-input {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      border: 0;
+      background: none;
+      font-size: 14px;
+      color: var(--browse-text);
+
+      &::placeholder {
+        color: var(--browse-faint);
+        opacity: 1;
+      }
+
+      &:focus {
+        outline: none;
+      }
+
+      &::-webkit-search-cancel-button {
+        display: none;
+      }
+    }
+
+    &-clear {
+      .chat-icon-circle(28px; transparent);
+      border: 0;
+      font-size: 12px;
+      color: var(--browse-muted);
+      cursor: pointer;
+
+      &:hover {
+        background: var(--browse-control-active-bg);
+        color: var(--browse-text);
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--browse-accent);
+      }
+    }
+  }
+
+  // `min(100%, …)` para uma coluna no celular não pedir mais que a viewport:
+  // 300px mais dois gutters de 16px passa da largura de alguns aparelhos.
+  &-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(~"min(100%, 300px)", 1fr));
+    gap: 16px;
+  }
+
+  // Estado vazio desta página. O `.ChatBrowse-empty` puro abaixo é compartilhado
+  // por todo painel vazio do chat.
+  > .ChatBrowse-empty {
+    border: 1px dashed var(--browse-control-border);
+    border-radius: 16px;
+    background: var(--browse-frozen-bg);
+
+    .ChatBrowse-empty-icon {
+      .chat-icon-circle(60px; var(--browse-accent-soft));
+      color: var(--browse-accent);
+    }
+
+    .ChatBrowse-empty-text {
+      max-width: 420px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--browse-muted);
+    }
+
+    .Button:not(.Button--primary) {
+      .chat-browse-secondary-btn();
+    }
+
+    .Button--primary {
+      border-radius: @chat-radius-pill;
+      font-weight: 700;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--browse-focus-ring);
+      }
+    }
+  }
+}
+
+// Estado vazio compartilhado (threads, fixadas, busca, favoritos, denúncias):
+// fica nos tokens globais do Avocado.
+.ChatBrowse-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px @chat-space-lg;
+  text-align: center;
+
+  &-icon {
+    .chat-icon-circle(56px);
+    margin-bottom: @chat-space-md;
+    font-size: 22px;
+    color: var(--avocado-muted-icon);
+  }
+
+  &-text {
+    margin: 0 0 @chat-space-lg;
+    font-size: @chat-font-message;
+    color: var(--avocado-muted-label);
+  }
+}
+
+// Botão secundário desta página. O `.Button` do core usa `--button-bg`, que
+// aqui é o mesmo cinza dos cards.
+.chat-browse-secondary-btn() {
+  border: 1px solid var(--browse-control-border);
+  border-radius: @chat-radius-pill;
+  background: var(--browse-control-bg);
+  color: var(--browse-text);
+  font-weight: 700;
+
+  &:hover {
+    border-color: var(--browse-control-hover-border);
+    background: var(--browse-control-hover-bg);
+    color: var(--browse-text);
+  }
+
+  &:active {
+    background: var(--browse-control-active-bg);
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    background: var(--browse-control-hover-bg);
+    box-shadow: var(--browse-focus-ring);
+  }
+}
+
+// Card em coluna: topo, descrição e rodapé. Borda e sombra aumentam no hover e
+// com foco dentro.
+.ChatBrowseCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--browse-card-border);
+  border-radius: 16px;
+  background: var(--browse-card-bg);
+  box-shadow: var(--browse-card-shadow);
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--browse-card-border-hover);
+    box-shadow: var(--browse-card-shadow-hover);
+  }
+
+  // Canal fechado ou arquivado: mais plano e em superfície rebaixada. Sem opacity,
+  // que deixava o texto abaixo do AA.
+  &--frozen {
+    background: var(--browse-frozen-bg);
+    box-shadow: none;
+
+    .ChatBrowseCard-icon:not(.ChatChannelIcon--avatars) {
+      filter: grayscale(1);
+      background: var(--browse-chip-bg);
+      color: var(--browse-faint);
+    }
+  }
+
+  &-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  &-headText {
+    flex: 1;
+    min-width: 0;
+    padding-top: 1px;
+  }
+
+  // Círculo tingido na família do destaque. A pilha de avatares de conversa
+  // direta mantém sua forma (components.less).
+  &-icon:not(.ChatChannelIcon--avatars) {
+    .chat-icon-circle(44px; var(--browse-accent-soft));
+    font-size: 20px;
+    color: var(--browse-accent);
+  }
+
+  &-icon.ChatChannelIcon--avatars {
+    width: 44px;
+  }
+
+  // h2, para os cards serem uma lista navegável por títulos; margens e tamanhos
+  // do tema são zerados.
+  &-name {
+    .chat-truncate();
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--browse-text);
+  }
+
+  &-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    // Só com pelo menos um badge: a linha vazia ainda empurraria a descrição.
+    &:not(:empty) {
+      margin-top: 6px;
+    }
+  }
+
+  &-description {
+    .chat-line-clamp(2);
+    // Sempre duas linhas, para os rodapés de uma mesma linha da grade alinharem.
+    min-height: 2.9em;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--browse-muted);
+
+    &--empty {
+      font-style: italic;
+      color: var(--browse-faint);
+    }
+  }
+
+  // Contadores à esquerda e controles à direita, presos embaixo para alinhar entre
+  // cards. Ao quebrar, o grupo de controles desce inteiro.
+  &-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: @chat-space-sm;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--browse-card-border);
+  }
+
+  // Contadores empilhados: cabem ao lado de até três controles num card de ~300px
+  // sem quebrar linha.
+  &-meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 34px;
+    line-height: 1.2;
+    font-size: @chat-font-meta;
+    font-weight: 600;
+    color: var(--browse-muted);
+
+    > span {
+      .chat-flex-row(6px);
+      white-space: nowrap;
+    }
+
+    i {
+      font-size: 11px;
+      color: var(--browse-faint);
+    }
+  }
+
+  // Chip: o que o canal é (privado, threads, fechado) em cinza neutro, e o que ele
+  // é para o leitor (membro, convidado, inspecionando) em cor própria.
+  &-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: @chat-radius-pill;
+    background: var(--browse-chip-bg);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    color: var(--browse-chip-text);
+
+    i,
+    .ChatBrowseCard-lock {
+      font-size: 10px;
+      color: inherit;
+    }
+
+    &--joined {
+      background: var(--browse-joined-bg);
+      color: var(--browse-joined-text);
+    }
+
+    &--invited {
+      background: var(--browse-invited-bg);
+      color: var(--browse-invited-text);
+    }
+
+    &--inspecting {
+      background: var(--browse-inspecting-bg);
+      color: var(--browse-inspecting-text);
+    }
+
+    &--frozen {
+      background: var(--browse-frozen-chip-bg);
+      color: var(--browse-frozen-chip-text);
+    }
+  }
+
+  &-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+
+    .Button {
+      height: 34px;
+      padding: 0 16px;
+      border-radius: @chat-radius-pill;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .Button:not(.Button--primary) {
+      .chat-browse-secondary-btn();
+    }
+
+    .Button--primary {
+      border: 1px solid transparent;
+      background: var(--browse-accent-bg);
+      color: var(--browse-on-accent);
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+
+      &:hover {
+        background: var(--browse-accent-bg-hover);
+        color: var(--browse-on-accent);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20);
+      }
+
+      &:active {
+        background: var(--browse-accent-bg-hover);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--browse-focus-ring);
+      }
+    }
+  }
+
+  &-iconButton {
+    .chat-icon-circle(34px; var(--browse-control-bg));
+    border: 1px solid var(--browse-control-border);
+    font-size: 13px;
+    color: var(--browse-muted);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--browse-control-hover-border);
+      background: var(--browse-control-hover-bg);
+      color: var(--browse-text);
+    }
+
+    &:active {
+      background: var(--browse-control-active-bg);
+    }
+
+    &:focus-visible {
+      outline: none;
+      background: var(--browse-control-hover-bg);
+      color: var(--browse-text);
+      box-shadow: var(--browse-focus-ring);
+    }
+
+    &--danger:hover,
+    &--danger:focus-visible {
+      border-color: var(--browse-danger);
+      background: var(--browse-danger-bg);
+      color: var(--browse-danger);
+    }
+  }
+
+  @media (max-width: @chat-mobile-breakpoint) {
+    padding: 16px;
+  }
+}
+
+// O skeleton mantém a moldura do card e anima só o conteúdo, para a grade não
+// fazer reflow quando os cards chegam.
+.ChatBrowseCard.ChatSkeleton {
+  padding: 18px;
+
+  .ChatSkeleton-avatar--large {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ChatSkeleton-avatar,
+  .ChatSkeleton-line,
+  .ChatSkeleton-button {
+    background: var(--browse-chip-bg);
+  }
+
+  .ChatSkeleton-button {
+    height: 34px;
+  }
+}
+
+.chat-motion-safe({
+  .ChatBrowse-back,
+  .ChatBrowse-filter,
+  .ChatBrowse-search,
+  .ChatBrowse-search-clear,
+  .ChatBrowseCard,
+  .ChatBrowseCard-iconButton,
+  .ChatBrowseCard-action .Button,
+  .ChatBrowse-header .Button--primary,
+  .ChatBrowse > .ChatBrowse-empty .Button {
+    transition:
+      background-color var(--avocado-t-fast),
+      border-color var(--avocado-t-fast),
+      box-shadow var(--avocado-t-medium),
+      color var(--avocado-t-fast);
+  }
+
+  .ChatBrowse-back i {
+    transition: transform var(--avocado-t-fast);
+  }
+
+  .ChatBrowse-back:hover i {
+    transform: translateX(-2px);
+  }
+});
+
+// Escuro: página mais escura, cards um passo acima, controles em branco
+// translúcido. O destaque é clareado quando vira texto, por causa do AA.
+[data-theme^="dark"] .ChatBrowse {
+  --browse-text:                 #ececee;
+  --browse-muted:                #b0b0b8;
+  --browse-faint:                #9a9aa3;
+  --browse-accent:               #ec8e8e;
+  --browse-accent-soft:          rgba(236, 142, 142, 0.14);
+
+  --browse-card-bg:              #222226;
+  --browse-card-border:          rgba(255, 255, 255, 0.09);
+  --browse-card-border-hover:    rgba(255, 255, 255, 0.22);
+  --browse-card-shadow:          0 1px 2px rgba(0, 0, 0, 0.30);
+  --browse-card-shadow-hover:    0 10px 28px rgba(0, 0, 0, 0.45);
+  --browse-frozen-bg:            #1d1d20;
+
+  --browse-control-bg:           rgba(255, 255, 255, 0.05);
+  --browse-control-border:       rgba(255, 255, 255, 0.16);
+  --browse-control-hover-bg:     rgba(255, 255, 255, 0.12);
+  --browse-control-hover-border: rgba(255, 255, 255, 0.34);
+  --browse-control-active-bg:    rgba(255, 255, 255, 0.18);
+
+  --browse-track-bg:             rgba(255, 255, 255, 0.05);
+  --browse-track-border:         rgba(255, 255, 255, 0.08);
+  --browse-tab-hover-bg:         rgba(255, 255, 255, 0.12);
+
+  --browse-chip-bg:              rgba(255, 255, 255, 0.08);
+  --browse-chip-text:            #c4c4cc;
+
+  --browse-joined-bg:            rgba(74, 222, 128, 0.14);
+  --browse-joined-text:          #8ee6ad;
+  --browse-invited-bg:           rgba(251, 191, 36, 0.15);
+  --browse-invited-text:         #f7cf6b;
+  --browse-inspecting-bg:        rgba(129, 140, 248, 0.18);
+  --browse-inspecting-text:      #c3c8ff;
+  --browse-frozen-chip-bg:       rgba(255, 255, 255, 0.12);
+  --browse-frozen-chip-text:     #d4d4da;
+
+  --browse-danger:               #ff8a8a;
+  --browse-danger-bg:            rgba(255, 107, 107, 0.16);
+
+  --browse-accent-bg-hover:      #c41414;
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    --browse-accent:             color-mix(in srgb, var(--primary-color) 45%, #fff);
+    --browse-accent-soft:        color-mix(in srgb, var(--primary-color) 22%, transparent);
+    --browse-accent-bg-hover:    color-mix(in srgb, var(--primary-color) 82%, #fff);
+  }
+}
