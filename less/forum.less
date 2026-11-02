@@ -1,0 +1,47 @@
+// ramon/chat: estilos do fórum
+//
+// Feito sobre o design system do Avocado: aqui só ficam os tokens do chat; o resto
+// vem das custom properties do `:root` do Avocado, então tema e modo escuro são
+// herdados. Sem o Avocado, `fallbacks` mapeia esses tokens para variáveis do core.
+
+@import "forum/fallbacks";
+@import "forum/variables";
+@import "forum/mixins";
+@import "forum/components";
+@import "forum/browse";
+@import "forum/ranks";
+
+// ── Cargos na aba de membros ──
+.ChatChannelInfo-member-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  background: var(--control-bg);
+  color: var(--control-color);
+  white-space: nowrap;
+}
+
+.ChatChannelInfo-member-badge--owner {
+  background: var(--primary-color);
+  color: var(--body-bg);
+}
+
+// Mesma pílula do dono, no tom mais claro da cor primária.
+.ChatChannelInfo-member-badge--moderator {
+  background: var(--control-bg);
+  color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+
+  @supports (background: color-mix(in srgb, red, blue)) {
+    background: color-mix(in srgb, var(--primary-color) 16%, var(--body-bg));
+    box-shadow: none;
+  }
+}
+
+.ChatChannelInfo-moderatorHelp {
+  margin: 0 0 8px;
+}

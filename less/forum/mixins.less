@@ -1,0 +1,222 @@
+// Mixins do chat
+//
+// Seguem os nomes de `mixins/avocado-utils.less`. Os que o Avocado já tem são
+// redeclarados aqui, idênticos de propósito, porque a extensão não pode contar com
+// o LESS do tema no include path.
+
+.chat-flex-center() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-flex-row(@gap: 0) {
+  display: flex;
+  align-items: center;
+  gap: @gap;
+}
+
+.chat-truncate() {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// overflow-wrap quebra tokens longos (URLs, hashes) em vez de vazarem da caixa.
+.chat-line-clamp(@lines) {
+  display: -webkit-box;
+  -webkit-line-clamp: @lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+
+// Anel verde de presença, como os avatares online do Avocado.
+.chat-online-ring(@ring: 2px) {
+  box-shadow: 0 0 0 @ring var(--avocado-online);
+}
+
+.chat-icon-circle(@size: 28px; @bg: var(--avocado-surface-1)) {
+  width: @size;
+  height: @size;
+  border-radius: 50%;
+  background: @bg;
+  .chat-flex-center();
+  flex-shrink: 0;
+
+  // Os dois são necessários para o glifo ficar no meio: `align-items: center`
+  // centraliza a line box, que com o line-height 1.5 herdado é mais alta que o
+  // ícone, e o <button> traz o padding padrão do navegador.
+  padding: 0;
+  line-height: 1;
+}
+
+.chat-pill-btn(@height: 30px; @h-padding: 12px; @font-size: @chat-font-label) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: @height;
+  padding: 0 @h-padding;
+  border-radius: @chat-radius-pill;
+  border: none;
+  font-size: @font-size;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--avocado-t-fast),
+    color var(--avocado-t-fast),
+    opacity var(--avocado-t-fast);
+}
+
+// Ação que muda estado dentro de um diálogo ("Fechar canal", "Arquivar canal").
+// O `.Button` do core usa `--button-bg`, cinza claro que some contra os painéis
+// dos diálogos; superfície e borda explícitas fazem o controle parecer clicável.
+.chat-action-btn() {
+  border: 1px solid var(--avocado-border-subtle);
+  background: var(--body-bg);
+  color: var(--avocado-text-dark);
+  font-weight: 600;
+
+  // O core pinta hover, focus, active e disabled pelas variáveis --button-bg-*,
+  // que desfariam a superfície acima.
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    background-color: var(--avocado-surface-1);
+    border-color: var(--avocado-border-chip);
+    color: var(--avocado-text-dark);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--avocado-surface-1);
+  }
+}
+
+// Controle destrutivo em texto ("Apagar canal"), mais discreto que
+// `.chat-action-btn()` para não competir com as ações reversíveis.
+//
+// A cor é `--error-color`. `--alert-error-color` parece o token certo mas é `#fff`
+// no core (texto sobre o fundo vermelho do alerta) e deixaria o label invisível.
+.chat-danger-btn() {
+  display: inline-flex;
+  width: auto;
+  padding: @chat-space-xs @chat-space-sm;
+  border: 0;
+  border-radius: @chat-radius-sm;
+  font-weight: 600;
+  line-height: 20px;
+  vertical-align: middle;
+  color: var(--error-color, #d83e3e);
+  background: transparent;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled),
+  &:active:not(:disabled) {
+    color: var(--error-color, #d83e3e);
+    background-color: var(--chat-danger-tint);
+    text-decoration: none;
+  }
+
+  &:disabled,
+  &.disabled {
+    background: transparent;
+  }
+}
+
+.chat-surface(@radius: @chat-radius-md) {
+  border: 1px solid var(--avocado-border-subtle);
+  border-radius: @radius;
+  background: var(--control-bg);
+  transition:
+    box-shadow var(--avocado-t-medium),
+    border-color var(--avocado-t-medium);
+}
+
+// Reserva o espaço da scrollbar onde houver suporte, para o texto não pular
+// quando o conteúdo transborda.
+.chat-scroll-y() {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  .chat-scrollbar();
+}
+
+// Scrollbar fina e translúcida, sem trilho, aplicada por `.chat-scroll-y()` em
+// toda superfície que rola.
+//
+// Duas sintaxes porque nenhuma vale em todo lugar: `scrollbar-width`/`scrollbar-color`
+// (Firefox, Chromium 121+) e `::-webkit-scrollbar` (Chromium antigo, Safari). Quem
+// entende as duas usa as propriedades padrão.
+.chat-scrollbar(@size: 10px) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--chat-scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: @size;
+    height: @size;
+  }
+
+  // Sem trilho.
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    // Borda transparente cortada do fundo: é o que deixa o thumb com ~4px e folga
+    // dos dois lados.
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: @chat-radius-pill;
+    background-color: var(--chat-scrollbar-thumb);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--chat-scrollbar-thumb-hover);
+  }
+
+  // O Chromium desenha um quadrado onde as barras se encontram; seria a única
+  // parte opaca.
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+// Escondido visualmente, mas acessível a leitores de tela e focável. Usado na
+// live region que anuncia mensagens novas.
+.chat-sr-only() {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Tudo o que o fórum desenha em volta de um chat em tela cheia.
+//
+// Aplicado no `<body>` porque nem tudo fica dentro de `#app`: há extensões que
+// montam elementos direto no body, e o `Page.bodyClass` do core só alcança `#app`.
+//
+// A página também para de rolar: o chat tem a altura da viewport e rola por
+// dentro, e uma scrollbar do documento ao lado arrastaria o layout no celular.
+.chat-suppress-page-chrome() {
+  overflow: hidden;
+
+  #modern-footer,
+  > footer,
+  .App-footer {
+    display: none;
+  }
+}
+
+// Respeita reduced-motion no que anima à chegada de mensagens; animar cada linha
+// pesa com muito volume.
+.chat-motion-safe(@rules) {
+  @media (prefers-reduced-motion: no-preference) {
+    @rules();
+  }
+}
